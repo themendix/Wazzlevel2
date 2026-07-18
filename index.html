@@ -1,0 +1,2964 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>GymLevels</title>
+<meta name="description" content="Suivi de musculation gamifié — niveaux, rangs par muscle, programmes personnalisés." />
+<meta name="theme-color" content="#14171C" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="GymLevels" />
+<style>
+  html, body { margin:0; padding:0; background:#14171C; height:100%; overscroll-behavior:none; }
+  #root { min-height:100vh; }
+  #boot-loading {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#9AA3B2; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size:14px; letter-spacing:0.05em; background:#14171C;
+  }
+  #boot-error {
+    display:none; position:fixed; inset:0; padding:24px; box-sizing:border-box;
+    color:#EDEFF2; font-family:-apple-system, sans-serif; font-size:14px; background:#14171C; line-height:1.6;
+  }
+  #boot-error code { background:#232833; padding:2px 6px; border-radius:4px; font-size:12px; word-break:break-all; }
+  #boot-retry {
+    background:#FF5A1F; color:#fff; border:none; border-radius:10px; padding:11px 18px;
+    font-size:14px; font-family:inherit; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<noscript>
+  <div style="padding:24px;color:#EDEFF2;font-family:sans-serif;line-height:1.6;">
+    GymLevels a besoin de JavaScript pour fonctionner. Active JavaScript dans ton navigateur puis recharge la page.
+  </div>
+</noscript>
+<div id="root"><div id="boot-loading">Chargement…</div></div>
+<div id="boot-error">
+  <strong>Le chargement a &eacute;chou&eacute;.</strong><br /><br />
+  <span id="boot-error-msg">V&eacute;rifie ta connexion internet : React et Babel sont t&eacute;l&eacute;charg&eacute;s depuis un CDN au premier lancement.</span>
+  <br /><br />
+  <button id="boot-retry" type="button">R&eacute;essayer</button>
+</div>
+
+<!-- Le code source JSX ci-dessous est volontairement en type="text/plain" :
+     il n'est ni execute ni transforme automatiquement par le navigateur.
+     C'est le chargeur place en fin de document qui le compile explicitement,
+     une fois React / ReactDOM / Babel reellement disponibles et verifies. -->
+<script type="text/plain" id="app-source">
+// React et ReactDOM sont chargés en global (UMD) depuis unpkg — voir index.html.
+const { useState, useEffect } = React;
+const { createRoot } = ReactDOM;
+
+// Icônes SVG maison (remplacent lucide-react pour éliminer toute dépendance
+// ESM externe fragile dans la version autonome hébergée).
+function Icon({ children, size = 24, className, viewBox = "0 0 24 24" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={viewBox}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      {children}
+    </svg>
+  );
+}
+function Home(props) {
+  return (
+    <Icon {...props}>
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5.5 10v9a1 1 0 0 0 1 1H9v-6h6v6h2.5a1 1 0 0 0 1-1v-9" />
+    </Icon>
+  );
+}
+function Dumbbell(props) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9v6M2 10.5v3" />
+      <path d="M20 9v6M22 10.5v3" />
+      <path d="M6.5 12h11" />
+      <rect x="4" y="7.5" width="3.2" height="9" rx="1" />
+      <rect x="16.3" y="7.5" width="3.2" height="9" rx="1" />
+    </Icon>
+  );
+}
+function Activity(props) {
+  return (
+    <Icon {...props}>
+      <path d="M2 12h4.2l2-6 4 15 2.6-9H22" />
+    </Icon>
+  );
+}
+function TrendingUp(props) {
+  return (
+    <Icon {...props}>
+      <path d="M3 16.5 9.5 10l4 4L21 6" />
+      <path d="M15 6h6v6" />
+    </Icon>
+  );
+}
+function User(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
+    </Icon>
+  );
+}
+function Flame(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 22c4 0 7-2.8 7-7 0-2.6-1.3-4.2-2.4-5.6.1 1.6-.7 2.7-1.7 3.1.4-2.6-.5-4.5-2.5-6.2.3 1.9-.4 3.3-1.6 4.1-.5-1.5-.9-3-1.3-4.4C7 8 5 10.4 5 14c0 4.4 3.4 8 7 8Z" />
+    </Icon>
+  );
+}
+function Trophy(props) {
+  return (
+    <Icon {...props}>
+      <path d="M8 4h8v6a4 4 0 0 1-8 0V4Z" />
+      <path d="M8 5H5a3 3 0 0 0 3 5M16 5h3a3 3 0 0 1-3 5" />
+      <path d="M10 15v2h4v-2M9 21h6M12 17v4" />
+    </Icon>
+  );
+}
+function Plus(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}
+function X(props) {
+  return (
+    <Icon {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Icon>
+  );
+}
+function ChevronRight(props) {
+  return (
+    <Icon {...props}>
+      <path d="M9 6l6 6-6 6" />
+    </Icon>
+  );
+}
+function CheckCircle2(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12.5l2.3 2.3L16 10" />
+    </Icon>
+  );
+}
+function Star(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.5 14.6 9l6 .8-4.4 4.1 1.1 5.9L12 17l-5.3 2.8 1.1-5.9L3.4 9.8l6-.8Z" />
+    </Icon>
+  );
+}
+function Award(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8.5" r="5.5" />
+      <path d="M8.5 13 7 21l5-2.5L17 21l-1.5-8" />
+    </Icon>
+  );
+}
+function CalendarDays(props) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="5" width="17" height="16" rx="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+      <path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2" />
+    </Icon>
+  );
+}
+function ArrowUpRight(props) {
+  return (
+    <Icon {...props}>
+      <path d="M7 17 17 7M9 7h8v8" />
+    </Icon>
+  );
+}
+function ArrowDownRight(props) {
+  return (
+    <Icon {...props}>
+      <path d="M7 7l10 10M17 9v8H9" />
+    </Icon>
+  );
+}
+function ArrowRight(props) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12h15M13 6l6 6-6 6" />
+    </Icon>
+  );
+}
+
+// Persistance locale (remplace l'API window.storage de Claude.ai par localStorage,
+// puisque cette version tourne comme une vraie page web autonome sur le téléphone).
+window.storage = {
+  async get(key) {
+    const v = window.localStorage.getItem(key);
+    return v === null ? null : { key, value: v, shared: false };
+  },
+  async set(key, value) {
+    window.localStorage.setItem(key, value);
+    return { key, value, shared: false };
+  },
+  async delete(key) {
+    window.localStorage.removeItem(key);
+    return { key, deleted: true, shared: false };
+  },
+  async list(prefix) {
+    const keys = Object.keys(window.localStorage).filter((k) => !prefix || k.startsWith(prefix));
+    return { keys, shared: false };
+  },
+};
+
+/* ---------------- DATA ---------------- */
+
+const MUSCLES = [
+  { id: "chest", label: "Pectoraux" },
+  { id: "back", label: "Dos" },
+  { id: "lats", label: "Grand dorsal" },
+  { id: "traps", label: "Trapèzes" },
+  { id: "shoulders", label: "Épaules" },
+  { id: "biceps", label: "Biceps" },
+  { id: "triceps", label: "Triceps" },
+  { id: "forearms", label: "Avant-bras" },
+  { id: "abs", label: "Abdominaux" },
+  { id: "obliques", label: "Obliques" },
+  { id: "lowerback", label: "Lombaires" },
+  { id: "quads", label: "Quadriceps" },
+  { id: "hamstrings", label: "Ischio-jambiers" },
+  { id: "glutes", label: "Fessiers" },
+  { id: "calves", label: "Mollets" },
+  { id: "adductors", label: "Adducteurs" },
+  { id: "cardio", label: "Cardio" },
+];
+
+const EXERCISES = [
+  { id: "benchpress", name: "Développé couché", muscle: "chest", type: "weight_reps" },
+  { id: "inclinedb", name: "Développé incliné haltères", muscle: "chest", type: "weight_reps" },
+  { id: "pushup", name: "Pompes", muscle: "chest", type: "bodyweight" },
+  { id: "flye", name: "Écarté couché", muscle: "chest", type: "weight_reps" },
+
+  { id: "barbellrow", name: "Rowing barre", muscle: "back", type: "weight_reps" },
+  { id: "dbrow", name: "Rowing haltère", muscle: "back", type: "weight_reps" },
+  { id: "seatedrow", name: "Tirage horizontal", muscle: "back", type: "weight_reps" },
+
+  { id: "pullup", name: "Tractions", muscle: "lats", type: "bodyweight" },
+  { id: "latpulldown", name: "Tirage vertical", muscle: "lats", type: "weight_reps" },
+  { id: "pullover", name: "Pull-over", muscle: "lats", type: "weight_reps" },
+
+  { id: "dbshrug", name: "Shrugs haltères", muscle: "traps", type: "weight_reps" },
+  { id: "barshrug", name: "Shrugs barre", muscle: "traps", type: "weight_reps" },
+  { id: "facepull", name: "Face pull", muscle: "traps", type: "weight_reps" },
+
+  { id: "ohp", name: "Développé militaire", muscle: "shoulders", type: "weight_reps" },
+  { id: "lateralraise", name: "Élévations latérales", muscle: "shoulders", type: "weight_reps" },
+  { id: "frontraise", name: "Élévations frontales", muscle: "shoulders", type: "weight_reps" },
+  { id: "reardelt", name: "Oiseau", muscle: "shoulders", type: "weight_reps" },
+  { id: "bandlateral", name: "Élévations latérales élastique", muscle: "shoulders", type: "band" },
+
+  { id: "barbellcurl", name: "Curl barre", muscle: "biceps", type: "weight_reps" },
+  { id: "dbcurl", name: "Curl haltères", muscle: "biceps", type: "weight_reps" },
+  { id: "hammercurl", name: "Curl marteau", muscle: "biceps", type: "weight_reps" },
+
+  { id: "pushdown", name: "Extension poulie", muscle: "triceps", type: "weight_reps" },
+  { id: "dips", name: "Dips", muscle: "triceps", type: "bodyweight" },
+  { id: "overheadext", name: "Extension nuque haltère", muscle: "triceps", type: "weight_reps" },
+  { id: "bandtriceps", name: "Extension triceps élastique", muscle: "triceps", type: "band" },
+
+  { id: "wristcurl", name: "Curl poignet", muscle: "forearms", type: "weight_reps" },
+  { id: "deadhang", name: "Suspension à la barre", muscle: "forearms", type: "duration" },
+
+  { id: "crunch", name: "Crunch", muscle: "abs", type: "bodyweight" },
+  { id: "legraise", name: "Relevé de jambes", muscle: "abs", type: "bodyweight" },
+  { id: "plank", name: "Planche", muscle: "abs", type: "duration" },
+
+  { id: "russiantwist", name: "Rotation russe", muscle: "obliques", type: "bodyweight" },
+  { id: "sideplank", name: "Planche latérale", muscle: "obliques", type: "duration" },
+
+  { id: "backext", name: "Extension lombaire", muscle: "lowerback", type: "bodyweight" },
+  { id: "rdl", name: "Soulevé de terre roumain", muscle: "lowerback", type: "weight_reps" },
+  { id: "superman", name: "Superman", muscle: "lowerback", type: "bodyweight" },
+
+  { id: "squat", name: "Squat", muscle: "quads", type: "weight_reps" },
+  { id: "legpress", name: "Presse à cuisses", muscle: "quads", type: "weight_reps" },
+  { id: "lunge", name: "Fentes", muscle: "quads", type: "weight_reps" },
+
+  { id: "legcurl", name: "Leg curl", muscle: "hamstrings", type: "weight_reps" },
+  { id: "stiffdl", name: "Soulevé de terre jambes tendues", muscle: "hamstrings", type: "weight_reps" },
+
+  { id: "hipthrust", name: "Hip thrust", muscle: "glutes", type: "weight_reps" },
+  { id: "bulgariansplit", name: "Fentes bulgares", muscle: "glutes", type: "weight_reps" },
+
+  { id: "standingcalf", name: "Mollets debout", muscle: "calves", type: "weight_reps" },
+  { id: "seatedcalf", name: "Mollets assis", muscle: "calves", type: "weight_reps" },
+
+  { id: "adductormachine", name: "Adducteurs machine", muscle: "adductors", type: "weight_reps" },
+  { id: "sumosquat", name: "Squat sumo", muscle: "adductors", type: "weight_reps" },
+
+  { id: "running", name: "Course à pied", muscle: "cardio", type: "distance" },
+  { id: "cycling", name: "Vélo", muscle: "cardio", type: "distance" },
+  { id: "jumprope", name: "Corde à sauter", muscle: "cardio", type: "duration" },
+  { id: "rowing", name: "Rameur", muscle: "cardio", type: "duration" },
+
+  // --- Ajouts : bibliothèque étendue ---
+
+  // PECTORAUX
+  { id: "dc-barre-chest", name: "Développé couché barre", muscle: "chest", type: "weight_reps" },
+  { id: "dc-halteres-chest", name: "Développé couché haltères", muscle: "chest", type: "weight_reps" },
+  { id: "di-barre-chest", name: "Développé incliné barre", muscle: "chest", type: "weight_reps" },
+  { id: "dd-chest", name: "Développé décliné", muscle: "chest", type: "weight_reps" },
+  { id: "machine-chest-press", name: "Machine Chest Press", muscle: "chest", type: "weight_reps" },
+  { id: "smith-bench-chest", name: "Smith Machine Bench Press", muscle: "chest", type: "weight_reps" },
+  { id: "dips-penche-chest", name: "Dips penché en avant", muscle: "chest", type: "bodyweight" },
+  { id: "ecarte-poulie-haute-chest", name: "Écarté poulie haute", muscle: "chest", type: "weight_reps" },
+  { id: "ecarte-poulie-basse-chest", name: "Écarté poulie basse", muscle: "chest", type: "weight_reps" },
+  { id: "ecarte-poulie-milieu-chest", name: "Écarté poulie milieu", muscle: "chest", type: "weight_reps" },
+  { id: "pec-deck", name: "Pec Deck", muscle: "chest", type: "weight_reps" },
+  { id: "ecarte-halteres-chest", name: "Écarté haltères", muscle: "chest", type: "weight_reps" },
+  { id: "pompes-lestees-chest", name: "Pompes lestées", muscle: "chest", type: "bodyweight" },
+  { id: "landmine-press-chest", name: "Landmine Press", muscle: "chest", type: "weight_reps" },
+  { id: "guillotine-press-chest", name: "Guillotine Press", muscle: "chest", type: "weight_reps" },
+  { id: "cable-press-chest", name: "Cable Press", muscle: "chest", type: "weight_reps" },
+  { id: "hammer-strength-chest", name: "Hammer Strength Chest Press", muscle: "chest", type: "weight_reps" },
+  { id: "squeeze-press-chest", name: "Squeeze Press", muscle: "chest", type: "weight_reps" },
+  { id: "ring-pushups-chest", name: "Ring Push-ups", muscle: "chest", type: "bodyweight" },
+
+  // DOS (dont Grand dorsal)
+  { id: "tractions-pronation-lats", name: "Tractions pronation", muscle: "lats", type: "bodyweight" },
+  { id: "tractions-supination-lats", name: "Tractions supination", muscle: "lats", type: "bodyweight" },
+  { id: "rowing-tbar-back", name: "Rowing T-Bar", muscle: "back", type: "weight_reps" },
+  { id: "rowing-poitrine-appuyee-back", name: "Rowing poitrine appuyée", muscle: "back", type: "weight_reps" },
+  { id: "rowing-cable-assis-back", name: "Rowing câble assis", muscle: "back", type: "weight_reps" },
+  { id: "seal-row-back", name: "Seal Row", muscle: "back", type: "weight_reps" },
+  { id: "meadows-row-back", name: "Meadows Row", muscle: "back", type: "weight_reps" },
+  { id: "pullover-poulie-lats", name: "Pull-over poulie", muscle: "lats", type: "weight_reps" },
+  { id: "straight-arm-pulldown-lats", name: "Straight Arm Pulldown", muscle: "lats", type: "weight_reps" },
+  { id: "machine-high-row-back", name: "Machine High Row", muscle: "back", type: "weight_reps" },
+  { id: "lat-pulldown-neutre-lats", name: "Lat Pulldown prise neutre", muscle: "lats", type: "weight_reps" },
+  { id: "one-arm-cable-row-back", name: "One Arm Cable Row", muscle: "back", type: "weight_reps" },
+  { id: "inverted-row-back", name: "Inverted Row", muscle: "back", type: "bodyweight" },
+  { id: "pendlay-row-back", name: "Pendlay Row", muscle: "back", type: "weight_reps" },
+  { id: "machine-row-back", name: "Machine Row", muscle: "back", type: "weight_reps" },
+  { id: "rack-pull-back", name: "Rack Pull", muscle: "back", type: "weight_reps" },
+  { id: "deadlift-back", name: "Deadlift", muscle: "back", type: "weight_reps" },
+
+  // ÉPAULES — faisceau antérieur
+  { id: "dev-halteres-shoulders", name: "Développé haltères", muscle: "shoulders", type: "weight_reps" },
+  { id: "smith-shoulder-press", name: "Smith Shoulder Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "arnold-press", name: "Arnold Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "machine-shoulder-press", name: "Machine Shoulder Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "landmine-press-shoulders", name: "Landmine Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "front-raise-halteres", name: "Front Raise haltères", muscle: "shoulders", type: "weight_reps" },
+  { id: "front-raise-cable", name: "Front Raise câble", muscle: "shoulders", type: "weight_reps" },
+  { id: "front-raise-barre", name: "Front Raise barre", muscle: "shoulders", type: "weight_reps" },
+  { id: "front-raise-disque", name: "Front Raise disque", muscle: "shoulders", type: "weight_reps" },
+  { id: "z-press", name: "Z Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "push-press", name: "Push Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "incline-front-raise", name: "Incline Front Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "cable-press-shoulders", name: "Cable Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "machine-front-raise", name: "Machine Front Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "kettlebell-press", name: "Kettlebell Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "pike-pushup", name: "Pike Push-up", muscle: "shoulders", type: "bodyweight" },
+  { id: "handstand-pushup", name: "Handstand Push-up", muscle: "shoulders", type: "bodyweight" },
+  { id: "bradford-press", name: "Bradford Press", muscle: "shoulders", type: "weight_reps" },
+  { id: "cuban-press", name: "Cuban Press", muscle: "shoulders", type: "weight_reps" },
+
+  // ÉPAULES — faisceau latéral
+  { id: "elev-lat-cable", name: "Élévations latérales câble", muscle: "shoulders", type: "weight_reps" },
+  { id: "elev-lat-halteres", name: "Élévations latérales haltères", muscle: "shoulders", type: "weight_reps" },
+  { id: "machine-lateral-raise", name: "Machine Lateral Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "lean-away-cable-raise", name: "Lean Away Cable Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "incline-lateral-raise", name: "Incline Lateral Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "cross-cable-lateral-raise", name: "Cross Cable Lateral Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "behind-back-cable-raise", name: "Behind the Back Cable Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "one-arm-cable-raise", name: "One Arm Cable Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "upright-row-large", name: "Upright Row prise large", muscle: "shoulders", type: "weight_reps" },
+  { id: "upright-row-ez", name: "Upright Row EZ", muscle: "shoulders", type: "weight_reps" },
+  { id: "y-raise", name: "Y Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "l-raise", name: "L Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "egyptian-raise", name: "Egyptian Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "machine-unilateral-raise", name: "Machine unilateral Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "dumbbell-swing-raise", name: "Dumbbell Swing Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "plate-raise-lateral", name: "Plate Raise latéral", muscle: "shoulders", type: "weight_reps" },
+  { id: "rope-upright-row", name: "Rope Upright Row", muscle: "shoulders", type: "weight_reps" },
+  { id: "partial-lateral-raise", name: "Partial Lateral Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "cable-y-raise", name: "Cable Y Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "seated-lateral-raise", name: "Seated Lateral Raise", muscle: "shoulders", type: "weight_reps" },
+
+  // ÉPAULES — faisceau postérieur
+  { id: "reverse-pec-deck", name: "Reverse Pec Deck", muscle: "shoulders", type: "weight_reps" },
+  { id: "face-pull-shoulders", name: "Face Pull", muscle: "shoulders", type: "weight_reps" },
+  { id: "reverse-fly-cable", name: "Reverse Fly câble", muscle: "shoulders", type: "weight_reps" },
+  { id: "reverse-fly-halteres", name: "Reverse Fly haltères", muscle: "shoulders", type: "weight_reps" },
+  { id: "rear-delt-row", name: "Rear Delt Row", muscle: "shoulders", type: "weight_reps" },
+  { id: "chest-supported-rear-delt", name: "Chest Supported Rear Delt Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "machine-rear-delt", name: "Machine Rear Delt", muscle: "shoulders", type: "weight_reps" },
+  { id: "high-cable-row-shoulders", name: "High Cable Row", muscle: "shoulders", type: "weight_reps" },
+  { id: "band-pull-apart", name: "Band Pull Apart", muscle: "shoulders", type: "band" },
+  { id: "bent-over-reverse-fly", name: "Bent Over Reverse Fly", muscle: "shoulders", type: "weight_reps" },
+  { id: "incline-reverse-fly", name: "Incline Reverse Fly", muscle: "shoulders", type: "weight_reps" },
+  { id: "rope-face-pull", name: "Rope Face Pull", muscle: "shoulders", type: "weight_reps" },
+  { id: "cable-rear-fly", name: "Cable Rear Fly", muscle: "shoulders", type: "weight_reps" },
+  { id: "wide-grip-row-shoulders", name: "Wide Grip Row", muscle: "shoulders", type: "weight_reps" },
+  { id: "reverse-cable-cross", name: "Reverse Cable Cross", muscle: "shoulders", type: "weight_reps" },
+  { id: "seal-rear-raise", name: "Seal Rear Raise", muscle: "shoulders", type: "weight_reps" },
+  { id: "trx-reverse-fly", name: "TRX Reverse Fly", muscle: "shoulders", type: "bodyweight" },
+  { id: "reverse-machine-fly", name: "Reverse Machine Fly", muscle: "shoulders", type: "weight_reps" },
+  { id: "high-row-coude-ouvert", name: "High Row coude ouvert", muscle: "shoulders", type: "weight_reps" },
+  { id: "ring-face-pull", name: "Ring Face Pull", muscle: "shoulders", type: "bodyweight" },
+
+  // BICEPS
+  { id: "curl-incline", name: "Curl incliné", muscle: "biceps", type: "weight_reps" },
+  { id: "bayesian-curl", name: "Bayesian Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "curl-pupitre", name: "Curl pupitre", muscle: "biceps", type: "weight_reps" },
+  { id: "spider-curl", name: "Spider Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "curl-barre-ez", name: "Curl barre EZ", muscle: "biceps", type: "weight_reps" },
+  { id: "curl-barre-droite", name: "Curl barre droite", muscle: "biceps", type: "weight_reps" },
+  { id: "curl-cable", name: "Curl câble", muscle: "biceps", type: "weight_reps" },
+  { id: "curl-unilateral-cable", name: "Curl unilatéral câble", muscle: "biceps", type: "weight_reps" },
+  { id: "concentration-curl", name: "Concentration Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "drag-curl", name: "Drag Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "machine-curl", name: "Machine Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "reverse-curl", name: "Reverse Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "rope-hammer-curl", name: "Rope Hammer Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "cross-body-hammer-curl", name: "Cross Body Hammer Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "high-cable-curl", name: "High Cable Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "chinup", name: "Chin-up", muscle: "biceps", type: "bodyweight" },
+  { id: "preacher-cable-curl", name: "Preacher Cable Curl", muscle: "biceps", type: "weight_reps" },
+  { id: "zottman-curl", name: "Zottman Curl", muscle: "biceps", type: "weight_reps" },
+
+  // TRICEPS
+  { id: "extension-cable-tete", name: "Extension câble au-dessus de la tête", muscle: "triceps", type: "weight_reps" },
+  { id: "skull-crusher", name: "Skull Crusher", muscle: "triceps", type: "weight_reps" },
+  { id: "close-grip-bench", name: "Close Grip Bench Press", muscle: "triceps", type: "weight_reps" },
+  { id: "pushdown-corde", name: "Pushdown corde", muscle: "triceps", type: "weight_reps" },
+  { id: "pushdown-barre", name: "Pushdown barre", muscle: "triceps", type: "weight_reps" },
+  { id: "pushdown-unilateral", name: "Pushdown unilatéral", muscle: "triceps", type: "weight_reps" },
+  { id: "jm-press", name: "JM Press", muscle: "triceps", type: "weight_reps" },
+  { id: "machine-dip", name: "Machine Dip", muscle: "triceps", type: "weight_reps" },
+  { id: "extension-halt-derriere-tete", name: "Extension haltère derrière la tête", muscle: "triceps", type: "weight_reps" },
+  { id: "french-press", name: "French Press", muscle: "triceps", type: "weight_reps" },
+  { id: "tate-press", name: "Tate Press", muscle: "triceps", type: "weight_reps" },
+  { id: "kickback-cable", name: "Kickback câble", muscle: "triceps", type: "weight_reps" },
+  { id: "kickback-halt", name: "Kickback haltère", muscle: "triceps", type: "weight_reps" },
+  { id: "reverse-grip-pushdown", name: "Reverse Grip Pushdown", muscle: "triceps", type: "weight_reps" },
+  { id: "bench-dip-leste", name: "Bench Dip lesté", muscle: "triceps", type: "bodyweight" },
+  { id: "smith-close-grip", name: "Smith Close Grip", muscle: "triceps", type: "weight_reps" },
+  { id: "pjr-pullover", name: "PJR Pullover", muscle: "triceps", type: "weight_reps" },
+  { id: "machine-extension-triceps", name: "Machine Extension", muscle: "triceps", type: "weight_reps" },
+  { id: "diamond-pushup", name: "Diamond Push-up", muscle: "triceps", type: "bodyweight" },
+
+  // QUADRICEPS
+  { id: "squat-arriere", name: "Squat arrière", muscle: "quads", type: "weight_reps" },
+  { id: "front-squat", name: "Front Squat", muscle: "quads", type: "weight_reps" },
+  { id: "hack-squat", name: "Hack Squat", muscle: "quads", type: "weight_reps" },
+  { id: "leg-press-quads", name: "Leg Press", muscle: "quads", type: "weight_reps" },
+  { id: "bulgarian-split-quads", name: "Bulgarian Split Squat", muscle: "quads", type: "weight_reps" },
+  { id: "walking-lunges-quads", name: "Walking Lunges", muscle: "quads", type: "weight_reps" },
+  { id: "smith-squat", name: "Smith Squat", muscle: "quads", type: "weight_reps" },
+  { id: "pendulum-squat", name: "Pendulum Squat", muscle: "quads", type: "weight_reps" },
+  { id: "leg-extension", name: "Leg Extension", muscle: "quads", type: "weight_reps" },
+  { id: "sissy-squat", name: "Sissy Squat", muscle: "quads", type: "bodyweight" },
+  { id: "goblet-squat", name: "Goblet Squat", muscle: "quads", type: "weight_reps" },
+  { id: "step-up-quads", name: "Step-up", muscle: "quads", type: "weight_reps" },
+  { id: "reverse-lunge-quads", name: "Reverse Lunge", muscle: "quads", type: "weight_reps" },
+  { id: "cyclist-squat", name: "Cyclist Squat", muscle: "quads", type: "weight_reps" },
+  { id: "belt-squat", name: "Belt Squat", muscle: "quads", type: "weight_reps" },
+  { id: "spanish-squat", name: "Spanish Squat", muscle: "quads", type: "duration" },
+  { id: "zercher-squat", name: "Zercher Squat", muscle: "quads", type: "weight_reps" },
+  { id: "split-squat", name: "Split Squat", muscle: "quads", type: "weight_reps" },
+  { id: "wall-squat", name: "Wall Squat", muscle: "quads", type: "duration" },
+  { id: "safety-bar-squat", name: "Safety Bar Squat", muscle: "quads", type: "weight_reps" },
+
+  // ISCHIO-JAMBIERS
+  { id: "romanian-deadlift-ham", name: "Romanian Deadlift", muscle: "hamstrings", type: "weight_reps" },
+  { id: "leg-curl-assis", name: "Leg Curl assis", muscle: "hamstrings", type: "weight_reps" },
+  { id: "leg-curl-couche", name: "Leg Curl couché", muscle: "hamstrings", type: "weight_reps" },
+  { id: "nordic-curl", name: "Nordic Curl", muscle: "hamstrings", type: "bodyweight" },
+  { id: "good-morning", name: "Good Morning", muscle: "hamstrings", type: "weight_reps" },
+  { id: "stiff-leg-deadlift", name: "Stiff Leg Deadlift", muscle: "hamstrings", type: "weight_reps" },
+  { id: "single-leg-rdl", name: "Single Leg RDL", muscle: "hamstrings", type: "weight_reps" },
+  { id: "glute-ham-raise", name: "Glute Ham Raise", muscle: "hamstrings", type: "bodyweight" },
+  { id: "cable-pull-through", name: "Cable Pull Through", muscle: "hamstrings", type: "weight_reps" },
+  { id: "kettlebell-swing-ham", name: "Kettlebell Swing", muscle: "hamstrings", type: "weight_reps" },
+  { id: "stability-ball-curl", name: "Stability Ball Curl", muscle: "hamstrings", type: "bodyweight" },
+  { id: "slider-leg-curl", name: "Slider Leg Curl", muscle: "hamstrings", type: "bodyweight" },
+  { id: "machine-hip-extension-ham", name: "Machine Hip Extension", muscle: "hamstrings", type: "weight_reps" },
+  { id: "reverse-hyper-ham", name: "Reverse Hyper", muscle: "hamstrings", type: "weight_reps" },
+  { id: "smith-rdl", name: "Smith RDL", muscle: "hamstrings", type: "weight_reps" },
+  { id: "dumbbell-rdl", name: "Dumbbell RDL", muscle: "hamstrings", type: "weight_reps" },
+  { id: "jefferson-curl", name: "Jefferson Curl", muscle: "hamstrings", type: "weight_reps" },
+  { id: "band-leg-curl", name: "Band Leg Curl", muscle: "hamstrings", type: "band" },
+  { id: "single-leg-curl", name: "Single Leg Curl", muscle: "hamstrings", type: "weight_reps" },
+  { id: "hip-hinge", name: "Hip Hinge", muscle: "hamstrings", type: "bodyweight" },
+
+  // FESSIERS
+  { id: "bulgarian-split-glutes", name: "Bulgarian Split Squat", muscle: "glutes", type: "weight_reps" },
+  { id: "romanian-deadlift-glutes", name: "Romanian Deadlift", muscle: "glutes", type: "weight_reps" },
+  { id: "cable-kickback-glutes", name: "Cable Kickback", muscle: "glutes", type: "weight_reps" },
+  { id: "walking-lunges-glutes", name: "Walking Lunges", muscle: "glutes", type: "weight_reps" },
+  { id: "glute-bridge", name: "Glute Bridge", muscle: "glutes", type: "bodyweight" },
+  { id: "step-up-glutes", name: "Step-up", muscle: "glutes", type: "weight_reps" },
+  { id: "sumo-deadlift", name: "Sumo Deadlift", muscle: "glutes", type: "weight_reps" },
+  { id: "cable-abduction", name: "Cable Abduction", muscle: "glutes", type: "weight_reps" },
+  { id: "machine-abduction", name: "Machine Abduction", muscle: "glutes", type: "weight_reps" },
+  { id: "curtsy-lunge", name: "Curtsy Lunge", muscle: "glutes", type: "weight_reps" },
+  { id: "reverse-hyper-glutes", name: "Reverse Hyper", muscle: "glutes", type: "weight_reps" },
+  { id: "frog-pumps", name: "Frog Pumps", muscle: "glutes", type: "bodyweight" },
+  { id: "smith-hip-thrust", name: "Smith Hip Thrust", muscle: "glutes", type: "weight_reps" },
+  { id: "single-leg-hip-thrust", name: "Single Leg Hip Thrust", muscle: "glutes", type: "bodyweight" },
+  { id: "deficit-reverse-lunge", name: "Deficit Reverse Lunge", muscle: "glutes", type: "weight_reps" },
+  { id: "b-stance-rdl", name: "B-Stance RDL", muscle: "glutes", type: "weight_reps" },
+  { id: "kettlebell-swing-glutes", name: "Kettlebell Swing", muscle: "glutes", type: "weight_reps" },
+  { id: "goblet-squat-profond", name: "Goblet Squat profond", muscle: "glutes", type: "weight_reps" },
+  { id: "glute-focused-back-extension", name: "Glute Focused Back Extension", muscle: "glutes", type: "bodyweight" },
+
+  // MOLLETS
+  { id: "standing-calf-raise", name: "Standing Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "seated-calf-raise", name: "Seated Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "donkey-calf-raise", name: "Donkey Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "leg-press-calf-raise", name: "Leg Press Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "smith-calf-raise", name: "Smith Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "single-leg-calf-raise", name: "Single Leg Calf Raise", muscle: "calves", type: "bodyweight" },
+  { id: "tibialis-raise", name: "Tibialis Raise", muscle: "calves", type: "bodyweight" },
+  { id: "jump-rope-calves", name: "Jump Rope", muscle: "calves", type: "duration" },
+  { id: "farmer-walk-pointes", name: "Farmer Walk sur pointes", muscle: "calves", type: "distance" },
+  { id: "machine-calf-raise", name: "Machine Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "hack-squat-calf-raise", name: "Hack Squat Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "stair-calf-raise", name: "Stair Calf Raise", muscle: "calves", type: "bodyweight" },
+  { id: "isometric-calf-hold", name: "Isometric Calf Hold", muscle: "calves", type: "duration" },
+  { id: "explosive-calf-raise", name: "Explosive Calf Raise", muscle: "calves", type: "weight_reps" },
+  { id: "bent-knee-calf-raise", name: "Bent Knee Raise", muscle: "calves", type: "weight_reps" },
+  { id: "straight-knee-calf-raise", name: "Straight Knee Raise", muscle: "calves", type: "weight_reps" },
+  { id: "weighted-jump", name: "Weighted Jump", muscle: "calves", type: "weight_reps" },
+  { id: "sled-push", name: "Sled Push", muscle: "calves", type: "distance" },
+  { id: "toe-walk", name: "Toe Walk", muscle: "calves", type: "distance" },
+  { id: "sprint-calves", name: "Sprint", muscle: "calves", type: "distance" },
+
+  // ABDOMINAUX
+  { id: "cable-crunch", name: "Cable Crunch", muscle: "abs", type: "weight_reps" },
+  { id: "hanging-leg-raise", name: "Hanging Leg Raise", muscle: "abs", type: "bodyweight" },
+  { id: "hanging-knee-raise", name: "Hanging Knee Raise", muscle: "abs", type: "bodyweight" },
+  { id: "ab-wheel", name: "Ab Wheel", muscle: "abs", type: "bodyweight" },
+  { id: "reverse-crunch", name: "Reverse Crunch", muscle: "abs", type: "bodyweight" },
+  { id: "dragon-flag", name: "Dragon Flag", muscle: "abs", type: "bodyweight" },
+  { id: "decline-situp", name: "Decline Sit-up", muscle: "abs", type: "bodyweight" },
+  { id: "machine-crunch", name: "Machine Crunch", muscle: "abs", type: "weight_reps" },
+  { id: "pallof-press", name: "Pallof Press", muscle: "abs", type: "weight_reps" },
+  { id: "dead-bug", name: "Dead Bug", muscle: "abs", type: "bodyweight" },
+  { id: "hollow-hold", name: "Hollow Hold", muscle: "abs", type: "duration" },
+  { id: "plank-en", name: "Plank", muscle: "abs", type: "duration" },
+  { id: "side-plank-abs", name: "Side Plank", muscle: "abs", type: "duration" },
+  { id: "cable-woodchopper", name: "Cable Woodchopper", muscle: "abs", type: "weight_reps" },
+  { id: "swiss-ball-crunch", name: "Swiss Ball Crunch", muscle: "abs", type: "bodyweight" },
+  { id: "toe-to-bar", name: "Toe to Bar", muscle: "abs", type: "bodyweight" },
+  { id: "v-up", name: "V-Up", muscle: "abs", type: "bodyweight" },
+  { id: "bicycle-crunch", name: "Bicycle Crunch", muscle: "abs", type: "bodyweight" },
+  { id: "stir-the-pot", name: "Stir the Pot", muscle: "abs", type: "duration" },
+  { id: "trx-pike", name: "TRX Pike", muscle: "abs", type: "bodyweight" },
+];
+
+const CLASSES = [
+  { id: "strength", name: "Chercheur de Force", desc: "Focalisé sur la charge et la force pure." },
+  { id: "mass", name: "Bâtisseur de Masse", desc: "Vise le volume et l'hypertrophie." },
+  { id: "endurance", name: "Chasseur d'Endurance", desc: "Cardio et résistance à l'effort." },
+  { id: "balance", name: "Guerrier de l'Équilibre", desc: "Développement harmonieux, tous muscles." },
+  { id: "recovery", name: "Spécialiste Récupération", desc: "Priorité à la régularité et à la mobilité." },
+  { id: "elite", name: "Athlète d'Élite", desc: "Exigence maximale, tous les fronts." },
+];
+
+// Calibré pour qu'un muscle entraîné directement ~2x/semaine atteigne le rang
+// Mythique en un minimum d'environ 2 ans d'entraînement dédié.
+const RANK_THRESHOLDS = [0, 1418, 6295, 15052, 27939, 45140, 66804, 93055, 124000];
+const TIER_NAMES = ["Bronze", "Argent", "Or", "Platine", "Diamant", "Maître", "Grand Maître", "Légende", "Mythique"];
+const TIER_COLORS = ["#9A6633", "#B8C0C8", "#E8B923", "#8FE3EA", "#7FCFFF", "#6C8CFF", "#9B6CFF", "#FF6EC7", "#C77DFF"];
+
+// Rang global basé sur le niveau du joueur (même échelle de 9 rangs que les muscles),
+// calibré pour atteindre Mythique au niveau 100 (Niveau Ultime).
+const LEVEL_RANK_THRESHOLDS = [1, 2, 6, 13, 23, 37, 54, 75, 100];
+
+function getLevelRankTier(level) {
+  let idx = 0;
+  for (let i = 0; i < LEVEL_RANK_THRESHOLDS.length; i++) {
+    if (level >= LEVEL_RANK_THRESHOLDS[i]) idx = i;
+    else break;
+  }
+  return idx;
+}
+
+const ACHIEVEMENTS = [
+  { id: "first", name: "Premier Sang", desc: "Termine ta première séance.", check: (s) => s.workoutLog.length >= 1 },
+  { id: "streak7", name: "Semaine de Fer", desc: "Atteins une série de 7 jours.", check: (s) => s.streak.longest >= 7 },
+  { id: "pr5", name: "Chasseur de Records", desc: "Décroche 5 records personnels.", check: (s) => Object.keys(s.prs).length >= 5 },
+  { id: "gold", name: "Passage à l'Or", desc: "Un muscle atteint le rang Or.", check: (s) => Object.values(s.muscleXp).some((xp) => getMuscleRankInfo(xp).tier >= 2) },
+  { id: "mythic", name: "Statut Mythique", desc: "Un muscle atteint le rang Mythique.", check: (s) => Object.values(s.muscleXp).some((xp) => getMuscleRankInfo(xp).tier === 8) },
+  { id: "balanced", name: "Corps Équilibré", desc: "Tous les muscles au moins au rang Argent.", check: (s) => Object.values(s.muscleXp).every((xp) => getMuscleRankInfo(xp).tier >= 1) },
+  { id: "level10", name: "Niveau 10", desc: "Atteins le niveau 10.", check: (s) => getLevelInfo(s.totalXp).level >= 10 },
+  { id: "maxlevel", name: "Niveau Ultime", desc: "Atteins le niveau 100 — le sommet, environ 2 ans d'entraînement rigoureux.", check: (s) => getLevelInfo(s.totalXp).level >= 100 },
+  { id: "volume10k", name: "10 000 kg Soulevés", desc: "Cumule 10 000 kg de volume total.", check: (s) => s.totalVolume >= 10000 },
+];
+
+const PRESET_PROGRAMS = [
+  {
+    id: "full-body",
+    name: "Full Body",
+    days: [
+      { label: "Corps complet", muscles: ["chest", "back", "shoulders", "biceps", "triceps", "quads", "hamstrings", "glutes", "abs"] },
+    ],
+  },
+  {
+    id: "upper-lower",
+    name: "Upper / Lower",
+    days: [
+      { label: "Upper (Haut du corps)", muscles: ["chest", "back", "lats", "shoulders", "biceps", "triceps", "traps", "forearms"] },
+      { label: "Lower (Bas du corps)", muscles: ["quads", "hamstrings", "glutes", "calves", "adductors", "abs"] },
+    ],
+  },
+  {
+    id: "ppl",
+    name: "Push / Pull / Legs",
+    days: [
+      { label: "Push (Pecs, Épaules, Triceps)", muscles: ["chest", "shoulders", "triceps"] },
+      { label: "Pull (Dos, Biceps)", muscles: ["back", "lats", "traps", "biceps", "forearms"] },
+      { label: "Legs (Jambes, Fessiers)", muscles: ["quads", "hamstrings", "glutes", "calves", "adductors"] },
+    ],
+  },
+  {
+    id: "arnold",
+    name: "Arnold Split",
+    days: [
+      { label: "Pecs & Dos", muscles: ["chest", "back", "lats"] },
+      { label: "Épaules & Bras", muscles: ["shoulders", "biceps", "triceps"] },
+      { label: "Jambes", muscles: ["quads", "hamstrings", "glutes", "calves"] },
+    ],
+  },
+  {
+    id: "bro-split",
+    name: "Bro Split (5 jours)",
+    days: [
+      { label: "Pectoraux", muscles: ["chest"] },
+      { label: "Dos", muscles: ["back", "lats", "traps"] },
+      { label: "Épaules", muscles: ["shoulders"] },
+      { label: "Bras", muscles: ["biceps", "triceps", "forearms"] },
+      { label: "Jambes", muscles: ["quads", "hamstrings", "glutes", "calves", "adductors"] },
+    ],
+  },
+];
+
+function getAllPrograms(customPrograms) {
+  return [...PRESET_PROGRAMS, ...(customPrograms || [])];
+}
+
+// Silhouette neutre (non interactive) : tête (chauve), cou, bassin, genoux, mains, pieds
+const BODY_BASE = [
+  { id: "head", d: "M 83,30 C 83,14 117,14 117,30 C 117,44 108,52 100,52 C 92,52 83,44 83,30 Z", fill: "#454b56" },
+  { id: "neck", d: "M 92,48 h16 v12 h-16 Z", fill: "#454b56" },
+  { id: "hip", d: "M 80,178 C 90,190 110,190 120,178 L 120,203 C 110,214 90,214 80,203 Z", fill: "#454b56" },
+  { id: "knee-left", d: "M 78,290 h16 v14 h-16 Z", fill: "#454b56" },
+  { id: "knee-right", d: "M 106,290 h16 v14 h-16 Z", fill: "#454b56" },
+  { id: "hand-left", d: "M 40,190 C 35,196 35,208 43,210 C 51,212 56,204 54,195 Z", fill: "#454b56" },
+  { id: "hand-right", d: "M 160,190 C 165,196 165,208 157,210 C 149,212 144,204 146,195 Z", fill: "#454b56" },
+  { id: "foot-left", d: "M 73,383 C 65,390 63,400 73,403 C 86,406 95,400 94,391 L 90,384 Z", fill: "#454b56" },
+  { id: "foot-right", d: "M 127,383 C 135,390 137,400 127,403 C 114,406 105,400 106,391 L 110,384 Z", fill: "#454b56" },
+];
+
+// Lignes de définition musculaire (décoratives, non interactives) + doigts/orteils
+const DECOR_LINES_FRONT = [
+  "M 100,78 L 100,110",
+  "M 50,110 C 48,120 48,132 52,142",
+  "M 150,110 C 152,120 152,132 148,142",
+  "M 87,238 C 85,258 85,278 88,296",
+  "M 113,238 C 115,258 115,278 112,296",
+  "M 84,340 L 84,372",
+  "M 116,340 L 116,372",
+  "M 48,160 L 48,186",
+  "M 152,160 L 152,186",
+  "M 40,196 L 34,198 M 41,201 L 35,204 M 43,206 L 38,210",
+  "M 160,196 L 166,198 M 159,201 L 165,204 M 157,206 L 162,210",
+  "M 68,399 L 62,402 M 74,402 L 70,406 M 82,403 L 80,407",
+  "M 132,399 L 138,402 M 126,402 L 130,406 M 118,403 L 120,407",
+];
+
+const DECOR_LINES_BACK = [
+  "M 100,56 L 100,116",
+  "M 76,120 C 74,138 74,152 78,164",
+  "M 124,120 C 126,138 126,152 122,164",
+  "M 50,110 C 48,120 48,132 52,142",
+  "M 150,110 C 152,120 152,132 148,142",
+  "M 87,240 C 85,258 85,276 88,292",
+  "M 113,240 C 115,258 115,276 112,292",
+  "M 84,336 L 84,368",
+  "M 116,336 L 116,368",
+  "M 48,160 L 48,186",
+  "M 152,160 L 152,186",
+  "M 40,196 L 34,198 M 41,201 L 35,204 M 43,206 L 38,210",
+  "M 160,196 L 166,198 M 159,201 L 165,204 M 157,206 L 162,210",
+  "M 68,399 L 62,402 M 74,402 L 70,406 M 82,403 L 80,407",
+  "M 132,399 L 138,402 M 126,402 L 130,406 M 118,403 L 120,407",
+];
+
+// Zones musculaires interactives — vue de face — chaque zone a un id SVG unique
+const BODY_SHAPES_FRONT = [
+  { muscle: "traps", partId: "traps-left", d: "M 76,60 L 92,54 L 92,70 L 78,76 Z" },
+  { muscle: "traps", partId: "traps-right", d: "M 124,60 L 108,54 L 108,70 L 122,76 Z" },
+  { muscle: "shoulders", partId: "shoulders-left", d: "M 62,66 C 48,64 40,80 44,98 C 47,112 62,116 70,106 C 74,94 73,76 66,68 Z" },
+  { muscle: "shoulders", partId: "shoulders-right", d: "M 138,66 C 152,64 160,80 156,98 C 153,112 138,116 130,106 C 126,94 127,76 134,68 Z" },
+  { muscle: "chest", partId: "chest-left", d: "M 100,74 C 88,68 74,74 70,92 C 68,106 78,116 94,112 C 100,110 101,96 100,74 Z" },
+  { muscle: "chest", partId: "chest-right", d: "M 100,74 C 112,68 126,74 130,92 C 132,106 122,116 106,112 C 100,110 99,96 100,74 Z" },
+  { muscle: "biceps", partId: "biceps-left", d: "M 46,102 C 37,112 36,132 43,147 C 48,156 59,152 60,137 C 61,121 57,107 51,100 Z" },
+  { muscle: "biceps", partId: "biceps-right", d: "M 154,102 C 163,112 164,132 157,147 C 152,156 141,152 140,137 C 139,121 143,107 149,100 Z" },
+  { muscle: "forearms", partId: "forearms-left", d: "M 42,150 C 38,164 38,180 42,194 C 46,200 56,200 58,192 C 60,178 58,162 54,148 Z" },
+  { muscle: "forearms", partId: "forearms-right", d: "M 158,150 C 162,164 162,180 158,194 C 154,200 144,200 142,192 C 140,178 142,162 146,148 Z" },
+  { muscle: "abs", partId: "abs-1", d: "M 87,116 h13 v18 h-13 Z" },
+  { muscle: "abs", partId: "abs-2", d: "M 100,116 h13 v18 h-13 Z" },
+  { muscle: "abs", partId: "abs-3", d: "M 87,137 h13 v18 h-13 Z" },
+  { muscle: "abs", partId: "abs-4", d: "M 100,137 h13 v18 h-13 Z" },
+  { muscle: "abs", partId: "abs-5", d: "M 88,158 h12 v16 h-12 Z" },
+  { muscle: "abs", partId: "abs-6", d: "M 100,158 h12 v16 h-12 Z" },
+  { muscle: "obliques", partId: "obliques-left", d: "M 76,112 C 71,130 71,155 78,176 L 86,172 C 82,152 83,130 86,114 Z" },
+  { muscle: "obliques", partId: "obliques-right", d: "M 124,112 C 129,130 129,155 122,176 L 114,172 C 118,152 117,130 114,114 Z" },
+  { muscle: "quads", partId: "quads-left", d: "M 82,202 C 71,222 69,258 74,292 C 76,308 92,310 95,294 C 99,270 97,226 92,206 Z" },
+  { muscle: "quads", partId: "quads-right", d: "M 118,202 C 129,222 131,258 126,292 C 124,308 108,310 105,294 C 101,270 103,226 108,206 Z" },
+  { muscle: "adductors", partId: "adductors-center", d: "M 96,204 C 94,228 94,258 97,284 L 103,284 C 106,258 106,228 104,204 Z" },
+  { muscle: "calves", partId: "calves-left", d: "M 79,320 C 73,338 73,362 79,382 C 83,391 92,391 94,380 C 98,360 95,338 90,320 Z" },
+  { muscle: "calves", partId: "calves-right", d: "M 121,320 C 127,338 127,362 121,382 C 117,391 108,391 106,380 C 102,360 105,338 110,320 Z" },
+];
+
+// Zones musculaires interactives — vue de dos — chaque zone a un id SVG unique
+const BODY_SHAPES_BACK = [
+  { muscle: "traps", partId: "traps-back-center", d: "M 100,52 L 128,74 L 116,110 L 100,120 L 84,110 L 72,74 Z" },
+  { muscle: "lats", partId: "lats-left", d: "M 70,92 C 62,102 58,130 62,158 C 66,176 82,180 88,168 C 90,148 88,118 84,96 Z" },
+  { muscle: "lats", partId: "lats-right", d: "M 130,92 C 138,102 142,130 138,158 C 134,176 118,180 112,168 C 110,148 112,118 116,96 Z" },
+  { muscle: "shoulders", partId: "shoulders-back-left", d: "M 62,66 C 48,64 40,80 44,98 C 47,112 62,116 70,106 C 74,94 73,76 66,68 Z" },
+  { muscle: "shoulders", partId: "shoulders-back-right", d: "M 138,66 C 152,64 160,80 156,98 C 153,112 138,116 130,106 C 126,94 127,76 134,68 Z" },
+  { muscle: "back", partId: "rhomboids-center", d: "M 90,110 C 88,126 88,144 91,160 L 109,160 C 112,144 112,126 110,110 Z" },
+  { muscle: "triceps", partId: "triceps-left", d: "M 46,102 C 37,112 36,132 43,147 C 48,156 59,152 60,137 C 61,121 57,107 51,100 Z" },
+  { muscle: "triceps", partId: "triceps-right", d: "M 154,102 C 163,112 164,132 157,147 C 152,156 141,152 140,137 C 139,121 143,107 149,100 Z" },
+  { muscle: "forearms", partId: "forearms-back-left", d: "M 42,150 C 38,164 38,180 42,194 C 46,200 56,200 58,192 C 60,178 58,162 54,148 Z" },
+  { muscle: "forearms", partId: "forearms-back-right", d: "M 158,150 C 162,164 162,180 158,194 C 154,200 144,200 142,192 C 140,178 142,162 146,148 Z" },
+  { muscle: "lowerback", partId: "lowerback-center", d: "M 89,163 C 87,172 87,180 90,187 L 110,187 C 113,180 113,172 111,163 Z" },
+  { muscle: "glutes", partId: "glutes-left", d: "M 82,190 C 73,196 71,212 78,222 C 85,230 97,228 99,215 C 101,203 94,192 86,188 Z" },
+  { muscle: "glutes", partId: "glutes-right", d: "M 118,190 C 127,196 129,212 122,222 C 115,230 103,228 101,215 C 99,203 106,192 114,188 Z" },
+  { muscle: "hamstrings", partId: "hamstrings-left", d: "M 80,226 C 72,246 70,268 74,290 C 78,304 92,304 95,289 C 98,270 96,248 90,228 Z" },
+  { muscle: "hamstrings", partId: "hamstrings-right", d: "M 120,226 C 128,246 130,268 126,290 C 122,304 108,304 105,289 C 102,270 104,248 110,228 Z" },
+  { muscle: "calves", partId: "calves-back-left", d: "M 78,318 C 72,330 71,350 75,368 C 78,380 92,382 94,368 C 96,348 94,330 90,318 Z" },
+  { muscle: "calves", partId: "calves-back-right", d: "M 122,318 C 128,330 129,350 125,368 C 122,380 108,382 106,368 C 104,348 106,330 110,318 Z" },
+];
+
+function renderBodyShape(shape, key, fill, isSelected, onClick) {
+  return (
+    <path
+      key={key}
+      id={shape.partId || shape.id}
+      data-muscle={shape.muscle || ""}
+      className={onClick ? "muscle-shape" : "body-base-shape"}
+      d={shape.d}
+      fill={fill}
+      stroke={isSelected ? "#FFFFFF" : "rgba(0,0,0,0.35)"}
+      strokeWidth={isSelected ? 2.4 : 0.8}
+      onClick={onClick}
+      style={{ cursor: onClick ? "pointer" : "default" }}
+    />
+  );
+}
+
+function renderDecorLine(d, key) {
+  return <path key={key} d={d} fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth={1} strokeLinecap="round" />;
+}
+
+/* ---------------- HELPERS ---------------- */
+
+function defaultState() {
+  return {
+    classId: null,
+    totalXp: 0,
+    totalVolume: 0,
+    muscleXp: Object.fromEntries(MUSCLES.map((m) => [m.id, 0])),
+    streak: { current: 0, longest: 0, lastDate: null, freezesUsedWeek: 0, weekStart: null },
+    weightHistory: [],
+    goalWeight: null,
+    prs: {},
+    workoutLog: [],
+    programs: { activeProgramId: null, currentDayIndex: 0, completedCycles: 0 },
+    customPrograms: [],
+  };
+}
+
+const MAX_LEVEL = 100;
+
+// Courbe calibrée pour qu'un entraînement rigoureux (~5 séances/semaine) atteigne
+// le Niveau Ultime (100) en un minimum d'environ 2 ans.
+function xpForLevel(level) {
+  return Math.round(50 * Math.pow(level, 1.45));
+}
+
+function getLevelInfo(totalXp) {
+  let level = 1;
+  let remaining = totalXp;
+  while (level < MAX_LEVEL) {
+    const needed = xpForLevel(level);
+    if (remaining < needed) break;
+    remaining -= needed;
+    level += 1;
+  }
+  const isMax = level >= MAX_LEVEL;
+  return { level, xpIntoLevel: remaining, xpForNextLevel: isMax ? null : xpForLevel(level), isMax };
+}
+
+function getMuscleRankInfo(xp) {
+  let idx = 0;
+  for (let i = 0; i < RANK_THRESHOLDS.length; i++) {
+    if (xp >= RANK_THRESHOLDS[i]) idx = i;
+    else break;
+  }
+  const tier = idx;
+  const isMax = idx === RANK_THRESHOLDS.length - 1;
+  const currentThreshold = RANK_THRESHOLDS[idx];
+  const nextThreshold = isMax ? null : RANK_THRESHOLDS[idx + 1];
+  const progress = isMax ? 1 : (xp - currentThreshold) / (nextThreshold - currentThreshold);
+  return { idx, tier, isMax, progress, nextThreshold };
+}
+
+function getRankLabel(info) {
+  return TIER_NAMES[info.tier];
+}
+
+function computeSetXp(type, s) {
+  if (type === "weight_reps") return Math.max(1, Math.round(s.weight * s.reps * 0.5));
+  if (type === "bodyweight") return Math.max(1, Math.round(s.reps * 3));
+  if (type === "duration") return Math.max(1, Math.round(s.seconds / 2));
+  if (type === "distance") return Math.max(1, Math.round(s.km * 40));
+  if (type === "band") return Math.max(1, Math.round(s.reps * 2.5));
+  return 1;
+}
+
+function computeSetScore(type, s) {
+  if (type === "weight_reps") return s.weight * s.reps;
+  if (type === "bodyweight") return s.reps;
+  if (type === "duration") return s.seconds;
+  if (type === "distance") return s.km;
+  if (type === "band") return s.reps;
+  return 0;
+}
+
+function formatSet(type, s) {
+  if (type === "weight_reps") return `${s.weight}kg × ${s.reps}`;
+  if (type === "bodyweight" || type === "band") return `${s.reps} reps`;
+  if (type === "duration") return `${s.seconds}s`;
+  if (type === "distance") return `${s.km}km`;
+  return "";
+}
+
+// Renvoie la date LOCALE au format YYYY-MM-DD.
+// On n'utilise volontairement pas toISOString(), qui convertit en UTC et decale
+// la date d'un jour dans tous les fuseaux a l'est de Greenwich.
+function localDateKey(d) {
+  const date = d || new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Reconstruit une Date locale a minuit a partir d'une cle YYYY-MM-DD.
+// new Date("2026-07-18") serait interprete en UTC : meme famille de bug.
+function dateFromKey(key) {
+  const p = String(key).split("-");
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+
+function updateStreak(streak) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = localDateKey(today);
+  if (streak.lastDate === todayStr) return streak;
+
+  let { current, longest, freezesUsedWeek, weekStart } = streak;
+
+  if (!weekStart || (today - dateFromKey(weekStart)) / (1000 * 60 * 60 * 24) >= 7) {
+    weekStart = todayStr;
+    freezesUsedWeek = 0;
+  }
+
+  if (!streak.lastDate) {
+    current = 1;
+  } else {
+    const last = dateFromKey(streak.lastDate);
+    const diffDays = Math.round((today - last) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      current += 1;
+    } else if (diffDays === 2 && freezesUsedWeek < 2) {
+      current += 1;
+      freezesUsedWeek += 1;
+    } else {
+      current = 1;
+    }
+  }
+
+  longest = Math.max(longest, current);
+  return { current, longest, lastDate: todayStr, freezesUsedWeek, weekStart };
+}
+
+/* ---------------- SMALL COMPONENTS ---------------- */
+
+function SimpleLineChart({ data, dataKey, xKey, color }) {
+  if (!data || data.length === 0) return null;
+  const width = 320;
+  const height = 170;
+  const padTop = 12;
+  const padBottom = 22;
+  const padSide = 10;
+  const values = data.map((d) => d[dataKey]);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const innerW = width - padSide * 2;
+  const innerH = height - padTop - padBottom;
+
+  const points = data.map((d, i) => {
+    const x = padSide + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
+    const y = padTop + innerH - ((d[dataKey] - min) / range) * innerH;
+    return [x, y];
+  });
+  const pathD = points.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const areaD = pathD + ` L${points[points.length - 1][0].toFixed(1)},${(padTop + innerH).toFixed(1)} L${points[0][0].toFixed(1)},${(padTop + innerH).toFixed(1)} Z`;
+
+  const labelStep = Math.max(1, Math.ceil(data.length / 5));
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      <defs>
+        <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill="url(#chartFade)" stroke="none" />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      {points.map((p, i) => (
+        <circle key={i} cx={p[0]} cy={p[1]} r="3.2" fill={color} />
+      ))}
+      {data.map((d, i) =>
+        i % labelStep === 0 || i === data.length - 1 ? (
+          <text key={i} x={points[i][0]} y={height - 6} fontSize="9" fill="#9AA3B2" textAnchor="middle">
+            {d[xKey]}
+          </text>
+        ) : null
+      )}
+    </svg>
+  );
+}
+
+function ForgeBar({ progress, height }) {
+  const h = height || 14;
+  const pct = Math.min(100, Math.max(0, progress * 100));
+  return (
+    <div className="forge-bar" style={{ height: h }}>
+      <div className="forge-bar-fill" style={{ width: `${pct}%` }}>
+        <div className="forge-bar-shimmer" />
+      </div>
+    </div>
+  );
+}
+
+function TopHUD({ state }) {
+  const levelInfo = getLevelInfo(state.totalXp);
+  return (
+    <div className="top-hud">
+      <span className="hud-level-num">Nv.{levelInfo.level}</span>
+      <div className="hud-bar">
+        <ForgeBar progress={levelInfo.isMax ? 1 : levelInfo.xpIntoLevel / levelInfo.xpForNextLevel} height={8} />
+      </div>
+      <div className="hud-streak">
+        <Flame size={14} className="ember" /> {state.streak.current}
+      </div>
+    </div>
+  );
+}
+
+function Onboarding({ onSelect }) {
+  return (
+    <div className="onboarding">
+      <div className="onboarding-title">FORGE TON NIVEAU</div>
+      <p className="onboarding-sub">Choisis ta classe pour commencer à gagner de l'XP.</p>
+      <div className="class-grid">
+        {CLASSES.map((c) => (
+          <button key={c.id} className="class-card" onClick={() => onSelect(c.id)}>
+            <div className="class-name">{c.name}</div>
+            <div className="class-desc">{c.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProgramDayExercises({ day }) {
+  if (!day || !day.exercises || day.exercises.length === 0) return null;
+  return (
+    <div className="program-exercise-list">
+      {day.exercises.map((rawEntry, i) => {
+        const entry = normalizeExerciseEntry(rawEntry);
+        const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+        if (!ex) return null;
+        const target = formatTargetSets(entry, ex);
+        return (
+          <div key={entry.exerciseId + i} className="program-exercise-tag">
+            {ex.name}
+            {target && <span className="program-exercise-target"> — {target}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function computeTrend(values) {
+  if (!values || values.length < 2) return "stable";
+  const last = values[values.length - 1];
+  const prevAvg = values.slice(0, -1).reduce((a, b) => a + b, 0) / (values.length - 1);
+  if (prevAvg === 0) return last > 0 ? "up" : "stable";
+  if (last > prevAvg * 1.03) return "up";
+  if (last < prevAvg * 0.97) return "down";
+  return "stable";
+}
+
+function TrendBadge({ trend }) {
+  const Icon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : ArrowRight;
+  return (
+    <span className="home-hero-trend-icon">
+      <Icon size={13} />
+    </span>
+  );
+}
+
+function Sparkline({ values }) {
+  if (!values || values.length === 0) return <div className="sparkline sparkline-empty" />;
+  if (values.length === 1) {
+    return (
+      <div className="sparkline sparkline-dot-wrap">
+        <div className="sparkline-dot" />
+      </div>
+    );
+  }
+  const max = Math.max(...values, 1);
+  return (
+    <div className="sparkline">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className={`sparkline-bar ${i === values.length - 1 ? "sparkline-bar-active" : ""}`}
+          style={{ height: `${Math.max(10, (v / max) * 100)}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Dashboard({ state, activeProgram, activeProgramDay, onStartProgramSession }) {
+  const levelInfo = getLevelInfo(state.totalXp);
+  const unlockedCount = ACHIEVEMENTS.filter((a) => a.check(state)).length;
+  const classInfo = CLASSES.find((c) => c.id === state.classId);
+
+  const recentSessions = state.workoutLog.slice(-10);
+  const recentXp = recentSessions.reduce((sum, s) => sum + s.xp, 0);
+  const recentVolume = recentSessions.reduce((sum, s) => sum + s.volume, 0);
+  const recentMuscles = new Set();
+  recentSessions.forEach((s) => s.muscles.forEach((m) => recentMuscles.add(m)));
+  const currentWeight = state.weightHistory.length > 0 ? state.weightHistory[state.weightHistory.length - 1].weight : null;
+
+  const volumeSeries = recentSessions.map((s) => s.volume);
+  const volumeTrend = computeTrend(volumeSeries);
+  const volumeSubLabel = volumeTrend === "up" ? "Surcharge progressive" : volumeTrend === "down" ? "En baisse" : "Volume stable";
+
+  const weightSeries = state.weightHistory.slice(-10).map((w) => w.weight);
+  const weightTrend = computeTrend(weightSeries);
+  const weightSubLabel = weightTrend === "up" ? "En hausse" : weightTrend === "down" ? "En baisse" : "Poids stable";
+
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Tableau de bord</h2>
+
+      <div className="card hero-card">
+        <div className="hero-row">
+          <div className="hero-level">
+            <span className="hero-level-num">{levelInfo.level}</span>
+            <span className="hero-level-label">NIVEAU</span>
+          </div>
+          <div className="hero-class">{classInfo ? classInfo.name : ""}</div>
+        </div>
+        <ForgeBar progress={levelInfo.isMax ? 1 : levelInfo.xpIntoLevel / levelInfo.xpForNextLevel} />
+        <div className="hero-xp-label">{levelInfo.isMax ? "NIVEAU ULTIME ATTEINT" : `${levelInfo.xpIntoLevel} / ${levelInfo.xpForNextLevel} XP`}</div>
+        {!levelInfo.isMax && <div className="hero-max-label">Niveau ultime : {MAX_LEVEL} (~2 ans d'entraînement rigoureux)</div>}
+      </div>
+
+      {activeProgram && activeProgramDay && (
+        <div className="card program-hint-card">
+          <div className="card-label">Programme — {activeProgram.name}</div>
+          <div className="program-day-label">{activeProgramDay.label}</div>
+          <div className="program-day-muscles">
+            {activeProgramDay.muscles.map((mId) => (
+              <span key={mId} className="muscle-tag">
+                {MUSCLES.find((m) => m.id === mId)?.label}
+              </span>
+            ))}
+          </div>
+          <ProgramDayExercises day={activeProgramDay} />
+          <button className="btn-secondary" onClick={onStartProgramSession}>
+            Démarrer la séance du jour
+          </button>
+        </div>
+      )}
+
+      <div className="stat-grid">
+        <div className="stat-box">
+          <Flame size={18} className="stat-icon ember" />
+          <div className="stat-value">{state.streak.current}</div>
+          <div className="stat-label">Jours de suite</div>
+        </div>
+        <div className="stat-box">
+          <Trophy size={18} className="stat-icon gold-icon" />
+          <div className="stat-value">{Object.keys(state.prs).length}</div>
+          <div className="stat-label">Records</div>
+        </div>
+        <div className="stat-box">
+          <Award size={18} className="stat-icon steel" />
+          <div className="stat-value">
+            {unlockedCount}/{ACHIEVEMENTS.length}
+          </div>
+          <div className="stat-label">Succès</div>
+        </div>
+      </div>
+
+      <p className="hint-text home-section-hint">Tes 10 dernières séances</p>
+
+      <div className="card home-hero-stat">
+        <div className="card-label">Volume</div>
+        <div className="home-hero-body">
+          <div className="home-hero-text">
+            <div className="home-hero-value">
+              {Math.round(recentVolume)} <span className="home-hero-unit">kg</span>
+            </div>
+            <div className="home-hero-sub">
+              <span>{volumeSubLabel}</span>
+              <TrendBadge trend={volumeTrend} />
+            </div>
+          </div>
+          <Sparkline values={volumeSeries} />
+        </div>
+      </div>
+
+      <div className="home-mini-row">
+        <div className="card home-mini-card">
+          <div className="card-label">Séances</div>
+          <div className="home-mini-value">{recentSessions.length}</div>
+        </div>
+        <div className="card home-mini-card">
+          <div className="card-label">XP</div>
+          <div className="home-mini-value">{recentXp}</div>
+        </div>
+        <div className="card home-mini-card">
+          <div className="card-label">Muscles</div>
+          <div className="home-mini-value">{recentMuscles.size}</div>
+        </div>
+      </div>
+
+      <div className="card home-hero-stat">
+        <div className="card-label">Poids corporel</div>
+        <div className="home-hero-body">
+          <div className="home-hero-text">
+            <div className="home-hero-value">
+              {currentWeight !== null ? currentWeight : "—"} <span className="home-hero-unit">kg</span>
+            </div>
+            <div className="home-hero-sub">
+              <span>{currentWeight !== null ? weightSubLabel : "Aucune donnée"}</span>
+              {currentWeight !== null && <TrendBadge trend={weightTrend} />}
+            </div>
+          </div>
+          <Sparkline values={weightSeries} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExerciseSessionCard({ entry, onAddSet, onRemoveSet, onRemoveExercise, target }) {
+  const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+  const [form, setForm] = useState({ weight: "", reps: "", seconds: "", km: "" });
+
+  // Garde : un programme enregistre peut referencer un exercice qui n'existe plus.
+  // Sans ce test, ex.type plantait le rendu de TOUTE l'application.
+  if (!ex) return null;
+
+  function handleAdd() {
+    let setData = null;
+    if (ex.type === "weight_reps") {
+      const weight = parseFloat(form.weight);
+      const reps = parseInt(form.reps, 10);
+      if (!(weight > 0) || !(reps > 0)) return;
+      setData = { weight, reps };
+    } else if (ex.type === "bodyweight" || ex.type === "band") {
+      const reps = parseInt(form.reps, 10);
+      if (!(reps > 0)) return;
+      setData = { reps };
+    } else if (ex.type === "duration") {
+      const seconds = parseInt(form.seconds, 10);
+      if (!(seconds > 0)) return;
+      setData = { seconds };
+    } else if (ex.type === "distance") {
+      const km = parseFloat(form.km);
+      if (!(km > 0)) return;
+      setData = { km };
+    }
+    onAddSet(entry.exerciseId, setData);
+    setForm({ weight: "", reps: "", seconds: "", km: "" });
+  }
+
+  return (
+    <div className="session-card">
+      <div className="session-card-head">
+        <div>
+          <div className="session-card-name">{ex.name}</div>
+          <div className="session-card-muscle">{MUSCLES.find((m) => m.id === ex.muscle)?.label || ""}</div>
+          {target && <div className="session-card-target">Objectif : {target}</div>}
+        </div>
+        <button className="icon-btn" onClick={() => onRemoveExercise(entry.exerciseId)}>
+          <X size={16} />
+        </button>
+      </div>
+
+      {entry.sets.length > 0 && (
+        <div className="set-list">
+          {entry.sets.map((s, i) => (
+            <div key={i} className="set-row" style={{ zIndex: i + 1 }}>
+              <span className="set-row-label">
+                Série {i + 1} — {formatSet(ex.type, s)}
+              </span>
+              <span className="set-row-xp">+{computeSetXp(ex.type, s)} XP</span>
+              <button className="icon-btn small" onClick={() => onRemoveSet(entry.exerciseId, i)}>
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="set-form">
+        {ex.type === "weight_reps" && (
+          <>
+            <input type="number" placeholder="Poids (kg)" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+            <input type="number" placeholder="Répétitions" value={form.reps} onChange={(e) => setForm({ ...form, reps: e.target.value })} />
+          </>
+        )}
+        {(ex.type === "bodyweight" || ex.type === "band") && (
+          <input type="number" placeholder="Répétitions" value={form.reps} onChange={(e) => setForm({ ...form, reps: e.target.value })} />
+        )}
+        {ex.type === "duration" && (
+          <input type="number" placeholder="Secondes" value={form.seconds} onChange={(e) => setForm({ ...form, seconds: e.target.value })} />
+        )}
+        {ex.type === "distance" && (
+          <input type="number" step="0.1" placeholder="Distance (km)" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+        )}
+        <button className="btn-add-set" onClick={handleAdd}>
+          <Plus size={14} /> Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TrainTab(props) {
+  const {
+    sessionActive,
+    sessionExercises,
+    sessionIsFromProgram,
+    onStartSession,
+    onAddExercise,
+    onAddSet,
+    onRemoveSet,
+    onRemoveExercise,
+    onFinishSession,
+    onCancelSession,
+    search,
+    setSearch,
+    muscleFilter,
+    setMuscleFilter,
+    lastSession,
+    activeProgram,
+    activeProgramDay,
+    onStartProgramSession,
+  } = props;
+
+  if (!sessionActive) {
+    return (
+      <div className="tab-content">
+        <h2 className="tab-title">Entraînement</h2>
+
+        {activeProgram && activeProgramDay && (
+          <div className="card program-hint-card">
+            <div className="card-label">Programme — {activeProgram.name}</div>
+            <div className="program-day-label">{activeProgramDay.label}</div>
+            <div className="program-day-muscles">
+              {activeProgramDay.muscles.map((mId) => (
+                <span key={mId} className="muscle-tag">
+                  {MUSCLES.find((m) => m.id === mId)?.label}
+                </span>
+              ))}
+            </div>
+            <ProgramDayExercises day={activeProgramDay} />
+            <button className="btn-primary" onClick={onStartProgramSession}>
+              <Dumbbell size={16} /> Démarrer la séance du jour
+            </button>
+          </div>
+        )}
+
+        <button className="btn-primary btn-large" onClick={onStartSession}>
+          <Dumbbell size={18} /> Commencer une séance libre
+        </button>
+        {lastSession && (
+          <div className="card">
+            <div className="card-label">Dernière séance</div>
+            <div className="card-row">
+              <span>{new Date(lastSession.date).toLocaleDateString("fr-FR")}</span>
+              <span>+{lastSession.xp} XP</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const addedIds = new Set(sessionExercises.map((e) => e.exerciseId));
+  const filtered = EXERCISES.filter((ex) => {
+    if (addedIds.has(ex.id)) return false;
+    if (muscleFilter !== "all" && ex.muscle !== muscleFilter) return false;
+    if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Séance en cours</h2>
+
+      {activeProgram && activeProgramDay && (
+        <div className="card program-hint-card">
+          <div className="card-label">Aujourd'hui — {activeProgram.name}</div>
+          <div className="program-day-label">{activeProgramDay.label}</div>
+          <div className="program-day-muscles">
+            {activeProgramDay.muscles.map((mId) => (
+              <span key={mId} className="muscle-tag">
+                {MUSCLES.find((m) => m.id === mId)?.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!sessionIsFromProgram && sessionExercises.length === 0 && <p className="hint-text">Ajoute un exercice ci-dessous pour commencer.</p>}
+
+      {sessionExercises.map((entry) => {
+        const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+        const dayEntry = activeProgramDay?.exercises?.map(normalizeExerciseEntry).find((de) => de.exerciseId === entry.exerciseId);
+        const target = dayEntry ? formatTargetSets(dayEntry, ex) : "";
+        return (
+          <ExerciseSessionCard key={entry.exerciseId} entry={entry} onAddSet={onAddSet} onRemoveSet={onRemoveSet} onRemoveExercise={onRemoveExercise} target={target} />
+        );
+      })}
+
+      {sessionExercises.length > 0 && !sessionExercises.some((e) => e.sets.length > 0) && (
+        <p className="hint-text session-finish-hint">Ajoute au moins une série avant de terminer, sinon la séance sera annulée sans être enregistrée.</p>
+      )}
+
+      <div className="session-actions">
+        <button className="btn-primary" onClick={onFinishSession}>
+          <CheckCircle2 size={16} /> Terminer la séance
+        </button>
+        <button className="btn-ghost" onClick={onCancelSession}>
+          Annuler
+        </button>
+      </div>
+
+      {!sessionIsFromProgram && (
+        <div className="picker">
+          <div className="picker-title">Ajouter un exercice</div>
+          <input className="picker-search" type="text" placeholder="Rechercher un exercice..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="chip-row">
+            <button className={`chip ${muscleFilter === "all" ? "chip-active" : ""}`} onClick={() => setMuscleFilter("all")}>
+              Tous
+            </button>
+            {MUSCLES.map((m) => (
+              <button key={m.id} className={`chip ${muscleFilter === m.id ? "chip-active" : ""}`} onClick={() => setMuscleFilter(m.id)}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <div className="exercise-list">
+            {filtered.length === 0 && <p className="hint-text">Aucun exercice trouvé.</p>}
+            {filtered.map((ex) => (
+              <button key={ex.id} className="exercise-item" onClick={() => onAddExercise(ex.id)}>
+                <span>{ex.name}</span>
+                <ChevronRight size={14} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnatomyDiagram({ state, view, setView, selectedMuscle, onSelectMuscle }) {
+  const shapes = view === "front" ? BODY_SHAPES_FRONT : BODY_SHAPES_BACK;
+  const decorLines = view === "front" ? DECOR_LINES_FRONT : DECOR_LINES_BACK;
+
+  return (
+    <div className="anatomy-wrap">
+      <div className="anatomy-toggle">
+        <button className={`chip ${view === "front" ? "chip-active" : ""}`} onClick={() => setView("front")}>
+          Face avant
+        </button>
+        <button className={`chip ${view === "back" ? "chip-active" : ""}`} onClick={() => setView("back")}>
+          Face arrière
+        </button>
+      </div>
+      <svg viewBox="0 0 200 420" className="anatomy-svg">
+        {BODY_BASE.map((shape, i) => renderBodyShape(shape, `base-${i}`, shape.fill, false, null))}
+        {shapes.map((shape, i) => {
+          const info = getMuscleRankInfo(state.muscleXp[shape.muscle] || 0);
+          const fill = TIER_COLORS[info.tier];
+          const isSelected = selectedMuscle === shape.muscle;
+          return renderBodyShape(shape, `${view}-${i}`, fill, isSelected, () => onSelectMuscle(shape.muscle));
+        })}
+        {decorLines.map((d, i) => renderDecorLine(d, `decor-${view}-${i}`))}
+      </svg>
+      <p className="hint-text anatomy-caption">Touche une zone du corps pour voir sa progression.</p>
+    </div>
+  );
+}
+
+function MusclesTab({ state, onSuggestMuscle }) {
+  const [view, setView] = useState("front");
+  const [selectedMuscle, setSelectedMuscle] = useState(null);
+
+  const selectedInfo = selectedMuscle ? getMuscleRankInfo(state.muscleXp[selectedMuscle] || 0) : null;
+  const selectedLabel = selectedMuscle ? MUSCLES.find((m) => m.id === selectedMuscle)?.label : null;
+
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Muscles</h2>
+      <p className="hint-text">17 groupes musculaires, 9 rangs — de Bronze à Mythique.</p>
+
+      <AnatomyDiagram state={state} view={view} setView={setView} selectedMuscle={selectedMuscle} onSelectMuscle={setSelectedMuscle} />
+
+      {selectedMuscle && selectedInfo && (
+        <div className="muscle-panel-overlay" onClick={() => setSelectedMuscle(null)}>
+          <div className="muscle-panel" style={{ "--tier-color": TIER_COLORS[selectedInfo.tier] }} onClick={(e) => e.stopPropagation()}>
+            <button className="icon-btn muscle-panel-close" onClick={() => setSelectedMuscle(null)}>
+              <X size={18} />
+            </button>
+            <div className="muscle-panel-name">{selectedLabel}</div>
+            <span className="rank-pill" style={{ "--tier-color": TIER_COLORS[selectedInfo.tier] }}>
+              {getRankLabel(selectedInfo)}
+            </span>
+            <div className="muscle-badge-bar muscle-panel-bar">
+              <div className="muscle-badge-fill" style={{ width: `${selectedInfo.progress * 100}%`, background: TIER_COLORS[selectedInfo.tier] }} />
+            </div>
+            <div className="hint-text">{state.muscleXp[selectedMuscle] || 0} XP au total</div>
+            <button className="btn-secondary" onClick={() => onSuggestMuscle(selectedMuscle)}>
+              S'entraîner
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-label">Tous les muscles</div>
+        <div className="muscle-grid">
+          {MUSCLES.map((m) => {
+            const xp = state.muscleXp[m.id] || 0;
+            const info = getMuscleRankInfo(xp);
+            return (
+              <button
+                key={m.id}
+                className={`muscle-badge tier-${info.tier} ${selectedMuscle === m.id ? "muscle-badge-selected" : ""}`}
+                style={{ "--tier-color": TIER_COLORS[info.tier] }}
+                onClick={() => setSelectedMuscle(m.id)}
+              >
+                <div className="muscle-badge-name">{m.label}</div>
+                <div className="muscle-badge-rank">{getRankLabel(info)}</div>
+                <div className="muscle-badge-bar">
+                  <div className="muscle-badge-fill" style={{ width: `${info.progress * 100}%` }} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProgressTab({ state, onLogWeight, onSetGoal }) {
+  const [weightInput, setWeightInput] = useState("");
+  const [goalInput, setGoalInput] = useState(state.goalWeight || "");
+
+  const chartData = state.weightHistory.map((w) => ({
+    date: new Date(w.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+    poids: w.weight,
+  }));
+
+  const levelInfo = getLevelInfo(state.totalXp);
+  const overallTier = getLevelRankTier(levelInfo.level);
+  const overallRankName = TIER_NAMES[overallTier];
+  const overallRankColor = TIER_COLORS[overallTier];
+
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Progression</h2>
+
+      <div className="card rank-overview-card" style={{ "--tier-color": overallRankColor }}>
+        <div className="card-label">Rang actuel</div>
+        <div className="rank-overview-name">{overallRankName}</div>
+        <p className="hint-text">Basé sur ton niveau ({levelInfo.level}/{MAX_LEVEL}).</p>
+      </div>
+
+      <div className="card">
+        <div className="card-label">Poids corporel</div>
+        {chartData.length > 0 ? (
+          <div style={{ width: "100%" }}>
+            <SimpleLineChart data={chartData} dataKey="poids" xKey="date" color="#FF5A1F" />
+          </div>
+        ) : (
+          <p className="hint-text">Aucune donnée. Enregistre ton premier poids.</p>
+        )}
+
+        <div className="weight-form">
+          <input type="number" step="0.1" placeholder="Poids (kg)" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} />
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              const w = parseFloat(weightInput);
+              if (w > 0) {
+                onLogWeight(w);
+                setWeightInput("");
+              }
+            }}
+          >
+            Enregistrer
+          </button>
+        </div>
+        <div className="weight-form">
+          <input type="number" step="0.1" placeholder="Objectif (kg)" value={goalInput} onChange={(e) => setGoalInput(e.target.value)} />
+          <button
+            className="btn-ghost"
+            onClick={() => {
+              const g = parseFloat(goalInput);
+              if (g > 0) onSetGoal(g);
+            }}
+          >
+            Définir l'objectif
+          </button>
+        </div>
+        {state.goalWeight ? <p className="hint-text">Objectif : {state.goalWeight}kg</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function ProfileTab({ state, onChangeClass, onReset }) {
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Profil</h2>
+
+      <div className="card">
+        <div className="card-label">Classe</div>
+        <div className="class-grid">
+          {CLASSES.map((c) => (
+            <button key={c.id} className={`class-card ${state.classId === c.id ? "class-active" : ""}`} onClick={() => onChangeClass(c.id)}>
+              <div className="class-name">{c.name}</div>
+              <div className="class-desc">{c.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-label">Succès</div>
+        <div className="achievement-list">
+          {ACHIEVEMENTS.map((a) => {
+            const unlocked = a.check(state);
+            return (
+              <div key={a.id} className={`achievement-row ${unlocked ? "unlocked" : ""}`}>
+                <Star size={16} className={unlocked ? "ach-icon-unlocked" : "ach-icon-locked"} />
+                <div>
+                  <div className="achievement-name">{a.name}</div>
+                  <div className="achievement-desc">{a.desc}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <button className="btn-danger" onClick={onReset}>
+        Réinitialiser mes données
+      </button>
+    </div>
+  );
+}
+
+function formatTargetSets(entry, ex) {
+  if (!ex || !entry || !Array.isArray(entry.targetSets) || entry.targetSets.length === 0) return "";
+  return entry.targetSets.map((s, i) => `S${i + 1} ${formatSetLoose(ex.type, s)}`).join(" · ");
+}
+
+function formatSetLoose(type, s) {
+  if (type === "weight_reps") {
+    if (s.weight !== undefined && s.reps !== undefined) return `${s.weight}kg×${s.reps}`;
+    if (s.reps !== undefined) return `${s.reps} reps`;
+    if (s.weight !== undefined) return `${s.weight}kg`;
+    return "—";
+  }
+  if (type === "bodyweight" || type === "band") return s.reps !== undefined ? `${s.reps} reps` : "—";
+  if (type === "duration") return s.seconds !== undefined ? `${s.seconds}s` : "—";
+  if (type === "distance") return s.km !== undefined ? `${s.km}km` : "—";
+  return "—";
+}
+
+function isCompleteTargetSet(type, s) {
+  if (!s) return false;
+  if (type === "weight_reps") return typeof s.weight === "number" && !isNaN(s.weight) && s.weight > 0 && typeof s.reps === "number" && !isNaN(s.reps) && s.reps > 0;
+  if (type === "bodyweight" || type === "band") return typeof s.reps === "number" && !isNaN(s.reps) && s.reps > 0;
+  if (type === "duration") return typeof s.seconds === "number" && !isNaN(s.seconds) && s.seconds > 0;
+  if (type === "distance") return typeof s.km === "number" && !isNaN(s.km) && s.km > 0;
+  return false;
+}
+
+function normalizeExerciseEntry(entry) {
+  if (typeof entry === "string") return { exerciseId: entry, targetSets: [] };
+  if (!entry || typeof entry !== "object") return { exerciseId: "", targetSets: [] };
+  if (Array.isArray(entry.targetSets)) return { ...entry, targetSets: entry.targetSets };
+
+  // Ancien format agrégé (targetSets était un nombre + targetReps/targetWeight/targetSeconds/targetKm partagés)
+  const count = parseInt(entry.targetSets, 10);
+  if (count > 0) {
+    const singleSet = {};
+    if (entry.targetReps !== undefined) singleSet.reps = entry.targetReps;
+    if (entry.targetWeight !== undefined) singleSet.weight = entry.targetWeight;
+    if (entry.targetSeconds !== undefined) singleSet.seconds = entry.targetSeconds;
+    if (entry.targetKm !== undefined) singleSet.km = entry.targetKm;
+    return { exerciseId: entry.exerciseId, targetSets: Array.from({ length: count }, () => ({ ...singleSet })) };
+  }
+  return { exerciseId: entry.exerciseId, targetSets: [] };
+}
+
+function emptySetForType(type) {
+  if (type === "weight_reps") return { reps: "", weight: "" };
+  if (type === "bodyweight" || type === "band") return { reps: "" };
+  if (type === "duration") return { seconds: "" };
+  if (type === "distance") return { km: "" };
+  return {};
+}
+
+function DayExerciseRow({ entry, onAddSet, onUpdateSet, onRemoveSet, onRemoveExercise }) {
+  const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+  if (!ex) return null;
+  const sets = entry.targetSets || [];
+  return (
+    <div className="day-exercise-row">
+      <div className="day-exercise-row-head">
+        <span>{ex.name}</span>
+        <button className="icon-btn small" onClick={onRemoveExercise}>
+          <X size={12} />
+        </button>
+      </div>
+
+      {sets.length > 0 && (
+        <div className="day-set-list">
+          {sets.map((s, i) => (
+            <div key={i} className="day-set-row">
+              <span className="day-set-num">S{i + 1}</span>
+              {ex.type === "weight_reps" && (
+                <>
+                  <input type="number" placeholder="Reps" value={s.reps ?? ""} onChange={(e) => onUpdateSet(i, "reps", e.target.value)} />
+                  <input type="number" placeholder="Kg" value={s.weight ?? ""} onChange={(e) => onUpdateSet(i, "weight", e.target.value)} />
+                </>
+              )}
+              {(ex.type === "bodyweight" || ex.type === "band") && (
+                <input type="number" placeholder="Reps" value={s.reps ?? ""} onChange={(e) => onUpdateSet(i, "reps", e.target.value)} />
+              )}
+              {ex.type === "duration" && (
+                <input type="number" placeholder="Secondes" value={s.seconds ?? ""} onChange={(e) => onUpdateSet(i, "seconds", e.target.value)} />
+              )}
+              {ex.type === "distance" && (
+                <input type="number" step="0.1" placeholder="Km" value={s.km ?? ""} onChange={(e) => onUpdateSet(i, "km", e.target.value)} />
+              )}
+              <button className="icon-btn small" onClick={() => onRemoveSet(i)}>
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button className="btn-add-set-mini" onClick={() => onAddSet(emptySetForType(ex.type))}>
+        <Plus size={12} /> Ajouter une série
+      </button>
+    </div>
+  );
+}
+
+function ProgramBuilder({ onSave, onCancel }) {
+  const [name, setName] = useState("");
+  const [days, setDays] = useState([{ label: "", muscles: [], exercises: [] }]);
+  const [daySearch, setDaySearch] = useState({});
+  const [error, setError] = useState("");
+
+  function updateDayLabel(idx, label) {
+    setDays((prev) => prev.map((d, i) => (i === idx ? { ...d, label } : d)));
+  }
+
+  function toggleDayMuscle(idx, muscleId) {
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== idx) return d;
+        const has = d.muscles.includes(muscleId);
+        return { ...d, muscles: has ? d.muscles.filter((m) => m !== muscleId) : [...d.muscles, muscleId] };
+      })
+    );
+  }
+
+  function addDayExercise(idx, exerciseId) {
+    setDays((prev) => prev.map((d, i) => (i === idx ? { ...d, exercises: [...(d.exercises || []), { exerciseId, targetSets: [] }] } : d)));
+  }
+
+  function removeDayExercise(idx, exerciseId) {
+    setDays((prev) => prev.map((d, i) => (i === idx ? { ...d, exercises: (d.exercises || []).filter((e) => e.exerciseId !== exerciseId) } : d)));
+  }
+
+  function addDayExerciseSet(idx, exerciseId, newSet) {
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== idx) return d;
+        return {
+          ...d,
+          exercises: (d.exercises || []).map((e) => (e.exerciseId === exerciseId ? { ...e, targetSets: [...(e.targetSets || []), newSet] } : e)),
+        };
+      })
+    );
+  }
+
+  function updateDayExerciseSet(idx, exerciseId, setIdx, field, value) {
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== idx) return d;
+        return {
+          ...d,
+          exercises: (d.exercises || []).map((e) =>
+            e.exerciseId === exerciseId ? { ...e, targetSets: e.targetSets.map((s, si) => (si === setIdx ? { ...s, [field]: value } : s)) } : e
+          ),
+        };
+      })
+    );
+  }
+
+  function removeDayExerciseSet(idx, exerciseId, setIdx) {
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== idx) return d;
+        return {
+          ...d,
+          exercises: (d.exercises || []).map((e) => (e.exerciseId === exerciseId ? { ...e, targetSets: e.targetSets.filter((_, si) => si !== setIdx) } : e)),
+        };
+      })
+    );
+  }
+
+  function addDay() {
+    setDays((prev) => [...prev, { label: "", muscles: [], exercises: [] }]);
+  }
+
+  function removeDay(idx) {
+    setDays((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleSave() {
+    if (!name.trim()) {
+      setError("Donne un nom à ton programme avant d'enregistrer.");
+      return;
+    }
+    const incompleteDays = days.filter((d) => !d.label.trim() || d.muscles.length === 0);
+    if (incompleteDays.length > 0) {
+      setError("Chaque jour doit avoir un nom ET au moins un muscle sélectionné (touche les étiquettes grises sous le nom du jour).");
+      return;
+    }
+    setError("");
+    const cleanedDays = days.map((d) => ({
+      ...d,
+      exercises: (d.exercises || []).map((e) => ({
+        exerciseId: e.exerciseId,
+        targetSets: (e.targetSets || [])
+          .map((s) => {
+            const clean = {};
+            if (s.reps !== undefined && s.reps !== "") clean.reps = parseInt(s.reps, 10);
+            if (s.weight !== undefined && s.weight !== "") clean.weight = parseFloat(s.weight);
+            if (s.seconds !== undefined && s.seconds !== "") clean.seconds = parseInt(s.seconds, 10);
+            if (s.km !== undefined && s.km !== "") clean.km = parseFloat(s.km);
+            return clean;
+          })
+          .filter((s) => Object.keys(s).length > 0),
+      })),
+    }));
+    onSave({ id: `custom-${Date.now()}`, name: name.trim(), days: cleanedDays });
+  }
+
+  return (
+    <div className="card program-builder">
+      <div className="card-label">Nouveau programme</div>
+      <input className="picker-search" type="text" placeholder="Nom du programme (ex: Ma routine 4 jours)" value={name} onChange={(e) => setName(e.target.value)} />
+
+      {days.map((day, idx) => {
+        const dayIncomplete = error && (!day.label.trim() || day.muscles.length === 0);
+        const dayExercises = day.exercises || [];
+        const search = daySearch[idx] || "";
+        const options = day.muscles.length === 0
+          ? []
+          : EXERCISES.filter(
+              (ex) => day.muscles.includes(ex.muscle) && !dayExercises.some((e) => e.exerciseId === ex.id) && (!search || ex.name.toLowerCase().includes(search.toLowerCase()))
+            );
+        return (
+          <div key={idx} className={`program-day-builder ${dayIncomplete ? "program-day-builder-error" : ""}`}>
+            <div className="program-day-builder-head">
+              <input type="text" placeholder={`Jour ${idx + 1} (ex: Push)`} value={day.label} onChange={(e) => updateDayLabel(idx, e.target.value)} />
+              {days.length > 1 && (
+                <button className="icon-btn" onClick={() => removeDay(idx)}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="chip-row">
+              {MUSCLES.map((m) => (
+                <button key={m.id} className={`chip ${day.muscles.includes(m.id) ? "chip-active" : ""}`} onClick={() => toggleDayMuscle(idx, m.id)}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {day.muscles.length === 0 && <p className="hint-text program-day-hint">Touche au moins un muscle pour ce jour.</p>}
+
+            {day.muscles.length > 0 && (
+              <div className="day-exercise-picker">
+                <div className="picker-title">Exercices de ce jour (optionnel) — ajoute chaque série individuellement</div>
+                {dayExercises.length > 0 && (
+                  <div className="day-exercise-list">
+                    {dayExercises.map((entry) => (
+                      <DayExerciseRow
+                        key={entry.exerciseId}
+                        entry={entry}
+                        onAddSet={(newSet) => addDayExerciseSet(idx, entry.exerciseId, newSet)}
+                        onUpdateSet={(setIdx, field, value) => updateDayExerciseSet(idx, entry.exerciseId, setIdx, field, value)}
+                        onRemoveSet={(setIdx) => removeDayExerciseSet(idx, entry.exerciseId, setIdx)}
+                        onRemoveExercise={() => removeDayExercise(idx, entry.exerciseId)}
+                      />
+                    ))}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  className="picker-search day-exercise-search"
+                  placeholder="Rechercher un exercice à ajouter..."
+                  value={search}
+                  onChange={(e) => setDaySearch((prev) => ({ ...prev, [idx]: e.target.value }))}
+                />
+                <div className="exercise-list day-exercise-options">
+                  {options.length === 0 && <p className="hint-text">Aucun exercice trouvé pour ces muscles.</p>}
+                  {options.map((ex) => (
+                    <button key={ex.id} className="exercise-item" onClick={() => addDayExercise(idx, ex.id)}>
+                      <span>{ex.name}</span>
+                      <Plus size={14} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button className="btn-ghost" onClick={addDay}>
+        <Plus size={14} /> Ajouter un jour
+      </button>
+
+      {error && <p className="form-error">{error}</p>}
+
+      <div className="session-actions">
+        <button className="btn-primary" onClick={handleSave}>
+          Enregistrer
+        </button>
+        <button className="btn-ghost" onClick={onCancel}>
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProgramTab({ state, onSelectProgram, onClearProgram, onAddCustomProgram, onDeleteCustomProgram, onStartProgramSession }) {
+  const [showBuilder, setShowBuilder] = useState(false);
+  const active = getAllPrograms(state.customPrograms).find((p) => p.id === state.programs.activeProgramId) || null;
+  const activeDay = active ? active.days[state.programs.currentDayIndex % active.days.length] : null;
+
+  return (
+    <div className="tab-content">
+      <h2 className="tab-title">Programmes</h2>
+      <p className="hint-text">
+        Choisis une routine (Upper/Lower, Push/Pull/Legs...) ou crée la tienne avec autant de jours que tu veux. Une fois le dernier jour terminé, le
+        programme revient automatiquement au jour 1.
+      </p>
+
+      {active && activeDay ? (
+        <div className="card program-active-card">
+          <div className="card-row">
+            <div className="card-label" style={{ marginBottom: 0 }}>
+              Programme actif — {active.name}
+            </div>
+            <button className="icon-btn" onClick={onClearProgram}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="program-day-highlight">
+            <div className="program-day-index">
+              Jour {(state.programs.currentDayIndex % active.days.length) + 1} / {active.days.length}
+              {state.programs.completedCycles > 0 ? ` — Cycle ${state.programs.completedCycles + 1}` : ""}
+            </div>
+            <div className="program-day-label">{activeDay.label}</div>
+            <div className="program-day-muscles">
+              {activeDay.muscles.map((mId) => (
+                <span key={mId} className="muscle-tag">
+                  {MUSCLES.find((m) => m.id === mId)?.label}
+                </span>
+              ))}
+            </div>
+            <ProgramDayExercises day={activeDay} />
+          </div>
+          <button className="btn-primary" onClick={onStartProgramSession}>
+            <Dumbbell size={16} /> Démarrer la séance du jour
+          </button>
+        </div>
+      ) : (
+        <p className="hint-text">Aucun programme actif pour le moment — choisis-en un ci-dessous.</p>
+      )}
+
+      <div className="card">
+        <div className="card-label">Programmes prédéfinis</div>
+        <div className="program-list">
+          {PRESET_PROGRAMS.map((p) => (
+            <button key={p.id} className={`program-card ${state.programs.activeProgramId === p.id ? "program-active" : ""}`} onClick={() => onSelectProgram(p.id)}>
+              <span className="program-name">{p.name}</span>
+              <span className="program-days-count">
+                {p.days.length} jour{p.days.length > 1 ? "s" : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {state.customPrograms.length > 0 && (
+        <div className="card">
+          <div className="card-label">Mes programmes</div>
+          <div className="program-list">
+            {state.customPrograms.map((p) => (
+              <div key={p.id} className="program-card-row">
+                <button className={`program-card ${state.programs.activeProgramId === p.id ? "program-active" : ""}`} onClick={() => onSelectProgram(p.id)}>
+                  <span className="program-name">{p.name}</span>
+                  <span className="program-days-count">
+                    {p.days.length} jour{p.days.length > 1 ? "s" : ""}
+                  </span>
+                </button>
+                <button className="icon-btn" onClick={() => onDeleteCustomProgram(p.id)}>
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!showBuilder ? (
+        <button className="btn-secondary" onClick={() => setShowBuilder(true)}>
+          <Plus size={16} /> Créer un programme personnalisé
+        </button>
+      ) : (
+        <ProgramBuilder
+          onSave={(program) => {
+            onAddCustomProgram(program);
+            setShowBuilder(false);
+          }}
+          onCancel={() => setShowBuilder(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function BottomNav({ active, onChange }) {
+  const items = [
+    { id: "dashboard", icon: Home, label: "Accueil" },
+    { id: "train", icon: Dumbbell, label: "Entraîner" },
+    { id: "program", icon: CalendarDays, label: "Plans" },
+    { id: "muscles", icon: Activity, label: "Muscles" },
+    { id: "progress", icon: TrendingUp, label: "Progrès" },
+    { id: "profile", icon: User, label: "Profil" },
+  ];
+  return (
+    <nav className="bottom-nav">
+      {items.map((it) => {
+        const Icon = it.icon;
+        return (
+          <button key={it.id} className={`nav-item ${active === it.id ? "nav-active" : ""}`} onClick={() => onChange(it.id)}>
+            <Icon size={20} />
+            <span>{it.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SessionSummaryModal({ summary, onClose }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <div className="modal-title">Séance terminée</div>
+        <div className="modal-xp">+{summary.xp} XP</div>
+        {summary.leveledUp && <div className="modal-levelup">NIVEAU {summary.newLevel} ATTEINT !</div>}
+        {summary.programCompleted && (
+          <div className="modal-levelup modal-program-complete">
+            PROGRAMME "{summary.programCompleted.toUpperCase()}" TERMINÉ !<br />
+            Cycle {summary.cycleCount} bouclé — retour au jour 1 🔁
+          </div>
+        )}
+        {summary.rankUps.length > 0 && (
+          <div className="modal-section">
+            <div className="modal-section-title">Rangs améliorés</div>
+            {summary.rankUps.map((r, i) => (
+              <div key={i} className="modal-row">
+                {r.muscle} → {r.rank}
+              </div>
+            ))}
+          </div>
+        )}
+        {summary.prs.length > 0 && (
+          <div className="modal-section">
+            <div className="modal-section-title">Nouveaux records</div>
+            {summary.prs.map((p, i) => (
+              <div key={i} className="modal-row">
+                🏆 {p}
+              </div>
+            ))}
+          </div>
+        )}
+        <button className="btn-primary" onClick={onClose}>
+          Continuer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- APP ---------------- */
+
+function App() {
+  const [loaded, setLoaded] = useState(false);
+  const [state, setState] = useState(defaultState());
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionExercises, setSessionExercises] = useState([]);
+  const [sessionIsFromProgram, setSessionIsFromProgram] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [trainSearch, setTrainSearch] = useState("");
+  const [trainMuscleFilter, setTrainMuscleFilter] = useState("all");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await window.storage.get("gymlevels-data", false);
+        if (mounted && res && res.value) {
+          const parsed = JSON.parse(res.value);
+          setState((prev) => ({
+            ...defaultState(),
+            ...parsed,
+            muscleXp: { ...defaultState().muscleXp, ...(parsed.muscleXp || {}) },
+          }));
+        }
+      } catch (err) {
+        /* no existing data yet */
+      } finally {
+        if (mounted) setLoaded(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    (async () => {
+      try {
+        await window.storage.set("gymlevels-data", JSON.stringify(state), false);
+      } catch (err) {
+        /* ignore save errors */
+      }
+    })();
+  }, [state, loaded]);
+
+  function handleSelectClass(classId) {
+    setState((prev) => ({ ...prev, classId }));
+  }
+
+  function handleStartSession() {
+    setSessionIsFromProgram(false);
+    setSessionActive(true);
+    setActiveTab("train");
+  }
+
+  function handleSuggestMuscle(muscleId) {
+    setTrainMuscleFilter(muscleId);
+    setSessionIsFromProgram(false);
+    setSessionActive(true);
+    setActiveTab("train");
+  }
+
+  function handleSelectProgram(programId) {
+    setState((prev) => ({ ...prev, programs: { activeProgramId: programId, currentDayIndex: 0, completedCycles: 0 } }));
+  }
+
+  function handleClearProgram() {
+    setState((prev) => ({ ...prev, programs: { activeProgramId: null, currentDayIndex: 0, completedCycles: 0 } }));
+  }
+
+  function handleAddCustomProgram(program) {
+    setState((prev) => ({ ...prev, customPrograms: [...prev.customPrograms, program] }));
+  }
+
+  function handleDeleteCustomProgram(programId) {
+    setState((prev) => ({
+      ...prev,
+      customPrograms: prev.customPrograms.filter((p) => p.id !== programId),
+      programs: prev.programs.activeProgramId === programId ? { activeProgramId: null, currentDayIndex: 0, completedCycles: 0 } : prev.programs,
+    }));
+  }
+
+  function handleStartProgramSession() {
+    const active = getAllPrograms(state.customPrograms).find((p) => p.id === state.programs.activeProgramId);
+    let hasPredefinedExercises = false;
+    if (active) {
+      const day = active.days[state.programs.currentDayIndex % active.days.length];
+      setTrainMuscleFilter(day.muscles[0] || "all");
+      if (day.exercises && day.exercises.length > 0) {
+        hasPredefinedExercises = true;
+        setSessionExercises(
+          day.exercises.map((rawEntry) => {
+            const entry = normalizeExerciseEntry(rawEntry);
+            const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+            const sets = ex
+              ? (entry.targetSets || [])
+                  .filter((s) => isCompleteTargetSet(ex.type, s))
+                  .map((s) => ({ ...s }))
+              : [];
+            return { exerciseId: entry.exerciseId, sets };
+          })
+        );
+      }
+    }
+    setSessionIsFromProgram(hasPredefinedExercises);
+    setSessionActive(true);
+    setActiveTab("train");
+  }
+
+  function handleAddExercise(exerciseId) {
+    setSessionExercises((prev) => (prev.some((e) => e.exerciseId === exerciseId) ? prev : [...prev, { exerciseId, sets: [] }]));
+  }
+
+  function handleAddSet(exerciseId, setData) {
+    setSessionExercises((prev) => prev.map((e) => (e.exerciseId === exerciseId ? { ...e, sets: [...e.sets, setData] } : e)));
+  }
+
+  function handleRemoveSet(exerciseId, idx) {
+    setSessionExercises((prev) => prev.map((e) => (e.exerciseId === exerciseId ? { ...e, sets: e.sets.filter((_, i) => i !== idx) } : e)));
+  }
+
+  function handleRemoveExercise(exerciseId) {
+    setSessionExercises((prev) => prev.filter((e) => e.exerciseId !== exerciseId));
+  }
+
+  function handleCancelSession() {
+    setSessionActive(false);
+    setSessionExercises([]);
+    setSessionIsFromProgram(false);
+  }
+
+  function handleFinishSession() {
+    const hasSets = sessionExercises.some((e) => e.sets.length > 0);
+    if (!hasSets) {
+      setSessionActive(false);
+      setSessionExercises([]);
+      setSessionIsFromProgram(false);
+      return;
+    }
+
+    const newMuscleXp = { ...state.muscleXp };
+    const newPrs = { ...state.prs };
+    let totalSessionXp = 0;
+    let newVolume = 0;
+    const newPRsList = [];
+    const musclesTrained = new Set();
+
+    sessionExercises.forEach((entry) => {
+      const ex = EXERCISES.find((e) => e.id === entry.exerciseId);
+      if (!ex || entry.sets.length === 0) return;
+      musclesTrained.add(ex.muscle);
+      entry.sets.forEach((setData) => {
+        const xp = computeSetXp(ex.type, setData);
+        totalSessionXp += xp;
+        newMuscleXp[ex.muscle] = (newMuscleXp[ex.muscle] || 0) + xp;
+        if (ex.type === "weight_reps") newVolume += setData.weight * setData.reps;
+        const score = computeSetScore(ex.type, setData);
+        if (!newPrs[ex.id] || score > newPrs[ex.id]) {
+          newPrs[ex.id] = score;
+          if (!newPRsList.includes(ex.name)) newPRsList.push(ex.name);
+        }
+      });
+    });
+
+    const prevLevel = getLevelInfo(state.totalXp).level;
+    const newTotalXp = state.totalXp + totalSessionXp;
+    const newLevel = getLevelInfo(newTotalXp).level;
+
+    const rankUps = [];
+    musclesTrained.forEach((mId) => {
+      const before = getMuscleRankInfo(state.muscleXp[mId] || 0);
+      const after = getMuscleRankInfo(newMuscleXp[mId]);
+      if (after.idx > before.idx) {
+        rankUps.push({ muscle: MUSCLES.find((m) => m.id === mId)?.label || mId, rank: getRankLabel(after) });
+      }
+    });
+
+    const newStreak = updateStreak(state.streak);
+
+    const session = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      muscles: Array.from(musclesTrained),
+      xp: totalSessionXp,
+      volume: newVolume,
+    };
+
+    const activeProgramForSession = getAllPrograms(state.customPrograms).find((p) => p.id === state.programs.activeProgramId);
+    const wasLastDay = activeProgramForSession ? state.programs.currentDayIndex === activeProgramForSession.days.length - 1 : false;
+    const newPrograms = activeProgramForSession
+      ? {
+          activeProgramId: state.programs.activeProgramId,
+          currentDayIndex: (state.programs.currentDayIndex + 1) % activeProgramForSession.days.length,
+          completedCycles: wasLastDay ? (state.programs.completedCycles || 0) + 1 : state.programs.completedCycles || 0,
+        }
+      : state.programs;
+
+    setState((prev) => ({
+      ...prev,
+      totalXp: newTotalXp,
+      totalVolume: prev.totalVolume + newVolume,
+      muscleXp: newMuscleXp,
+      prs: newPrs,
+      streak: newStreak,
+      workoutLog: [...prev.workoutLog, session],
+      programs: newPrograms,
+    }));
+
+    setSummary({
+      xp: totalSessionXp,
+      leveledUp: newLevel > prevLevel,
+      newLevel,
+      rankUps,
+      prs: newPRsList,
+      programCompleted: wasLastDay && activeProgramForSession ? activeProgramForSession.name : null,
+      cycleCount: newPrograms.completedCycles,
+    });
+    setSessionActive(false);
+    setSessionExercises([]);
+    setSessionIsFromProgram(false);
+  }
+
+  function handleLogWeight(weight) {
+    const today = localDateKey();
+    setState((prev) => {
+      const filtered = prev.weightHistory.filter((w) => w.date !== today);
+      return { ...prev, weightHistory: [...filtered, { date: today, weight }].sort((a, b) => a.date.localeCompare(b.date)) };
+    });
+  }
+
+  function handleSetGoal(goal) {
+    setState((prev) => ({ ...prev, goalWeight: goal }));
+  }
+
+  function handleReset() {
+    setShowResetConfirm(true);
+  }
+
+  function confirmReset() {
+    setState(defaultState());
+    setSessionActive(false);
+    setSessionExercises([]);
+    setSessionIsFromProgram(false);
+    setActiveTab("dashboard");
+    setShowResetConfirm(false);
+  }
+
+  function cancelReset() {
+    setShowResetConfirm(false);
+  }
+
+  const lastSession = state.workoutLog.length > 0 ? state.workoutLog[state.workoutLog.length - 1] : null;
+  const activeProgram = getAllPrograms(state.customPrograms).find((p) => p.id === state.programs.activeProgramId) || null;
+  const activeProgramDay = activeProgram ? activeProgram.days[state.programs.currentDayIndex % activeProgram.days.length] : null;
+
+  return (
+    <div className="app-shell">
+      <style>{APP_CSS}</style>
+      {!loaded ? (
+        <div className="loading-screen">Chargement...</div>
+      ) : !state.classId ? (
+        <Onboarding onSelect={handleSelectClass} />
+      ) : (
+        <>
+          <TopHUD state={state} />
+          <main className="app-main">
+            {activeTab === "dashboard" && (
+              <Dashboard
+                state={state}
+                activeProgram={activeProgram}
+                activeProgramDay={activeProgramDay}
+                onStartProgramSession={handleStartProgramSession}
+              />
+            )}
+            {activeTab === "train" && (
+              <TrainTab
+                sessionActive={sessionActive}
+                sessionExercises={sessionExercises}
+                sessionIsFromProgram={sessionIsFromProgram}
+                onStartSession={handleStartSession}
+                onAddExercise={handleAddExercise}
+                onAddSet={handleAddSet}
+                onRemoveSet={handleRemoveSet}
+                onRemoveExercise={handleRemoveExercise}
+                onFinishSession={handleFinishSession}
+                onCancelSession={handleCancelSession}
+                search={trainSearch}
+                setSearch={setTrainSearch}
+                muscleFilter={trainMuscleFilter}
+                setMuscleFilter={setTrainMuscleFilter}
+                lastSession={lastSession}
+                activeProgram={activeProgram}
+                activeProgramDay={activeProgramDay}
+                onStartProgramSession={handleStartProgramSession}
+              />
+            )}
+            {activeTab === "program" && (
+              <ProgramTab
+                state={state}
+                onSelectProgram={handleSelectProgram}
+                onClearProgram={handleClearProgram}
+                onAddCustomProgram={handleAddCustomProgram}
+                onDeleteCustomProgram={handleDeleteCustomProgram}
+                onStartProgramSession={handleStartProgramSession}
+              />
+            )}
+            {activeTab === "muscles" && <MusclesTab state={state} onSuggestMuscle={handleSuggestMuscle} />}
+            {activeTab === "progress" && <ProgressTab state={state} onLogWeight={handleLogWeight} onSetGoal={handleSetGoal} />}
+            {activeTab === "profile" && <ProfileTab state={state} onChangeClass={handleSelectClass} onReset={handleReset} />}
+          </main>
+          <BottomNav active={activeTab} onChange={setActiveTab} />
+          {summary && <SessionSummaryModal summary={summary} onClose={() => setSummary(null)} />}
+          {showResetConfirm && (
+            <div className="modal-overlay">
+              <div className="modal-card">
+                <div className="modal-title">Réinitialiser ?</div>
+                <p className="hint-text">
+                  Niveau, XP, rangs musculaires, séances, records et poids seront effacés définitivement.
+                </p>
+                <div className="session-actions">
+                  <button className="btn-danger" onClick={confirmReset}>
+                    Oui, tout effacer
+                  </button>
+                  <button className="btn-ghost" onClick={cancelReset}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- STYLES ---------------- */
+
+const APP_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+.app-shell {
+  --bg: #14171C;
+  --bg-alt: #1B1F26;
+  --bg-alt2: #232833;
+  --border: #2E3440;
+  --text: #EDEFF2;
+  --text-dim: #9AA3B2;
+  --ember: #FF5A1F;
+  --ember-soft: rgba(255,90,31,0.16);
+  --steel: #5EC8D8;
+  --gold: #E8B923;
+  --danger: #E5484D;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background: radial-gradient(ellipse at top, #1c2129 0%, var(--bg) 60%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 460px;
+  margin: 0 auto;
+  position: relative;
+}
+.app-shell * { box-sizing: border-box; }
+.app-shell button { font-family: inherit; cursor: pointer; }
+.app-shell input { font-family: inherit; }
+
+.loading-screen {
+  display:flex; align-items:center; justify-content:center;
+  height:100vh; color:var(--text-dim); font-family:'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.top-hud {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 16px;
+  background: linear-gradient(180deg, #1A1D23, #14171C);
+  border-bottom:1px solid var(--border);
+  position: sticky; top:0; z-index:10;
+}
+.hud-level-num { font-family:'Oswald', sans-serif; font-weight:700; font-size:15px; color:var(--ember); white-space:nowrap; }
+.hud-bar { flex:1; }
+.hud-streak { display:flex; align-items:center; gap:4px; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.ember { color: var(--ember); }
+.steel { color: var(--steel); }
+.gold-icon { color: var(--gold); }
+
+.forge-bar {
+  background: linear-gradient(180deg,#0B0D10,#191D24);
+  border:1px solid var(--border);
+  border-radius:999px;
+  overflow:hidden;
+  position:relative;
+  width:100%;
+}
+.forge-bar-fill {
+  height:100%;
+  background: linear-gradient(90deg, #7A2E10, var(--ember) 55%, #FFB347 100%);
+  border-radius:999px;
+  position:relative;
+  box-shadow: 0 0 10px rgba(255,90,31,0.5);
+  transition: width 0.7s cubic-bezier(.22,1,.36,1);
+  overflow:hidden;
+}
+.forge-bar-shimmer {
+  position:absolute; inset:0; width:40%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { transform:translateX(-150%); }
+  100% { transform:translateX(350%); }
+}
+
+.app-main { flex:1; padding: 16px 16px 90px; overflow-y:auto; }
+.tab-title {
+  font-family:'Oswald', sans-serif; font-weight:600; font-size:20px;
+  letter-spacing:0.02em; margin: 4px 0 16px; text-transform: uppercase;
+}
+.hint-text { color: var(--text-dim); font-size:13px; margin: 8px 0; }
+
+.card { background: var(--bg-alt); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; }
+.card-label { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em; color: var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
+.card-row { display:flex; justify-content:space-between; align-items:center; font-size:15px; margin-bottom:10px; }
+
+.hero-card { border-color: rgba(255,90,31,0.3); }
+.hero-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px; }
+.hero-level { display:flex; align-items:baseline; gap:6px; }
+.hero-level-num { font-family:'Oswald', sans-serif; font-weight:700; font-size:40px; color:var(--ember); line-height:1; }
+.hero-level-label { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); letter-spacing:0.1em; }
+.hero-class { font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--steel); text-align:right; }
+.hero-xp-label { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-top:6px; text-align:right; }
+.hero-max-label { font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--text-dim); opacity:0.7; margin-top:2px; text-align:right; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.stat-box { background: var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:12px 8px; text-align:center; }
+.stat-icon { margin-bottom:6px; }
+.stat-value { font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:700; }
+.stat-label { font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--ember), #D9440F);
+  color:#fff; border:none; border-radius:12px; padding:13px 18px;
+  font-weight:600; font-size:15px; display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; box-shadow: 0 4px 14px rgba(255,90,31,0.3);
+}
+.btn-large { padding:15px 18px; font-size:16px; }
+.btn-secondary { background: var(--bg-alt2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:14px; width:100%; }
+.btn-ghost { background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:14px; width:100%; }
+.btn-danger { background:transparent; color:var(--danger); border:1px solid rgba(229,72,77,0.4); border-radius:10px; padding:12px 14px; font-size:14px; width:100%; margin-top:6px; }
+.icon-btn { background:transparent; border:none; color:var(--text-dim); padding:4px; display:flex; align-items:center; justify-content:center; border-radius:6px; }
+.icon-btn:hover { color:var(--text); }
+.icon-btn.small { padding:2px; }
+
+.rank-pill {
+  font-family:'JetBrains Mono', monospace; font-size:11px; padding:3px 10px; border-radius:999px;
+  background: color-mix(in srgb, var(--tier-color) 22%, transparent);
+  color: var(--tier-color);
+  border:1px solid var(--tier-color);
+}
+
+.muscle-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.muscle-badge {
+  background: var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:12px; position:relative;
+  width:100%; text-align:left; color:var(--text); display:block;
+}
+.muscle-badge-name { font-size:13px; font-weight:600; margin-bottom:2px; }
+.muscle-badge-rank { font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--tier-color); margin-bottom:8px; }
+.muscle-badge-bar { height:5px; background:#0B0D10; border-radius:999px; overflow:hidden; }
+.muscle-badge-fill { height:100%; background: var(--tier-color); border-radius:999px; }
+.muscle-badge.tier-6, .muscle-badge.tier-7, .muscle-badge.tier-8 { box-shadow: 0 0 14px color-mix(in srgb, var(--tier-color) 45%, transparent); }
+.muscle-badge.tier-8 { animation: mythic-pulse 2.4s ease-in-out infinite; }
+.muscle-badge-selected { outline: 2px solid var(--tier-color); outline-offset: 1px; }
+@keyframes mythic-pulse {
+  0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--tier-color) 40%, transparent); }
+  50% { box-shadow: 0 0 22px color-mix(in srgb, var(--tier-color) 70%, transparent); }
+}
+
+.anatomy-wrap { display:flex; flex-direction:column; align-items:center; margin-bottom:14px; }
+.anatomy-toggle { display:flex; gap:8px; margin-bottom:10px; }
+.anatomy-svg { width:100%; max-width:220px; height:auto; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
+.muscle-shape { transition: filter 0.2s ease, fill 0.5s ease, opacity 0.2s ease; }
+.muscle-shape:hover { filter: brightness(1.25) drop-shadow(0 0 6px rgba(255,255,255,0.75)); }
+.body-base-shape { transition: fill 0.5s ease; }
+.anatomy-caption { text-align:center; margin-top:6px; }
+.muscle-panel-overlay {
+  position:fixed; inset:0; background:rgba(10,11,14,0.55); z-index:45;
+  display:flex; justify-content:flex-end; animation: panelFadeIn 0.25s ease;
+}
+.muscle-panel {
+  width:min(320px, 82vw); height:100%; background:var(--bg-alt); border-left:2px solid var(--tier-color);
+  padding:24px 20px; overflow-y:auto; position:relative; box-shadow:-10px 0 28px rgba(0,0,0,0.45);
+  animation: panelSlideIn 0.32s cubic-bezier(.22,1,.36,1);
+}
+.muscle-panel-close { position:absolute; top:16px; right:16px; }
+.muscle-panel-name { font-family:'Oswald', sans-serif; font-weight:700; font-size:22px; margin:8px 0 10px; text-transform:uppercase; }
+.muscle-panel-bar { margin:14px 0 8px; height:8px; }
+.muscle-panel .btn-secondary { margin-top:16px; }
+@keyframes panelSlideIn { from { transform:translateX(100%); } to { transform:translateX(0); } }
+@keyframes panelFadeIn { from { opacity:0; } to { opacity:1; } }
+
+.session-card { background: var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px; }
+.session-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.session-card-name { font-weight:600; font-size:14px; }
+.session-card-muscle { font-size:11px; color:var(--text-dim); }
+.set-list { margin-bottom:16px; padding-top:2px; }
+.set-row {
+  display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim);
+  background: var(--bg-alt2); border:1px solid var(--border); border-radius:10px;
+  padding:9px 10px 20px; position:relative; box-shadow:0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.set-row:not(:first-child) { margin-top:-15px; }
+.set-row:hover, .set-row:focus-within { transform: translateY(-5px); box-shadow:0 10px 20px rgba(0,0,0,0.5); z-index:80 !important; }
+.set-row-label { flex:1; }
+.set-row-xp { color: var(--ember); font-family:'JetBrains Mono', monospace; }
+.set-form { display:flex; gap:8px; flex-wrap:wrap; }
+.set-form input { background: var(--bg-alt2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; width:100px; }
+.btn-add-set { background: var(--bg-alt2); border:1px solid var(--ember); color: var(--ember); border-radius:8px; padding:8px 12px; font-size:13px; display:flex; align-items:center; gap:4px; }
+
+.session-actions { display:flex; gap:10px; margin: 12px 0 18px; }
+.session-finish-hint { color: var(--danger); }
+
+.picker { margin-top:8px; }
+.picker-title { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+.picker-search { width:100%; background: var(--bg-alt2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; font-size:14px; margin-bottom:10px; }
+.chip-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.chip { background: var(--bg-alt2); border:1px solid var(--border); color:var(--text-dim); border-radius:999px; padding:6px 12px; font-size:12px; }
+.chip-active { background: var(--ember-soft); border-color: var(--ember); color: var(--ember); }
+.exercise-list { max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.exercise-item { display:flex; justify-content:space-between; align-items:center; background: var(--bg-alt); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px 14px; font-size:13px; text-align:left; }
+
+.weight-form { display:flex; gap:8px; margin-top:10px; }
+.weight-form input { flex:1; background: var(--bg-alt2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:9px 10px; font-size:13px; }
+.mini-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:center; }
+.rank-overview-card { border-color: var(--tier-color); text-align:center; }
+.rank-overview-name {
+  font-family:'Oswald', sans-serif; font-weight:700; font-size:28px; color:var(--tier-color);
+  text-transform:uppercase; letter-spacing:0.03em; margin:6px 0 4px;
+}
+.rank-overview-card .hint-text { text-align:center; margin:0; }
+.home-section-hint { margin: 4px 0 8px; text-transform:uppercase; font-size:11px; letter-spacing:0.06em; font-family:'JetBrains Mono', monospace; }
+
+.home-hero-stat { padding:18px; }
+.home-hero-body { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-top:8px; }
+.home-hero-text { flex:1; min-width:0; }
+.home-hero-value { font-family:'Oswald', sans-serif; font-weight:700; font-size:26px; color:var(--text); line-height:1; }
+.home-hero-unit { font-size:15px; font-weight:400; color:var(--text-dim); margin-left:2px; }
+.home-hero-sub { display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--text-dim); }
+.home-hero-trend-icon {
+  width:20px; height:20px; border-radius:50%; background: rgba(94,200,216,0.16); color: var(--steel);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+
+.home-mini-row { display:flex; gap:10px; margin-bottom:14px; }
+.home-mini-card { flex:1; padding:14px; }
+.home-mini-value { font-family:'Oswald', sans-serif; font-weight:700; font-size:20px; color:var(--text); margin-top:6px; }
+
+.sparkline { display:flex; align-items:flex-end; gap:3px; height:52px; width:104px; flex-shrink:0; }
+.sparkline-empty { visibility:hidden; }
+.sparkline-bar { flex:1; background: var(--border); border-radius:999px; min-height:6px; }
+.sparkline-bar-active { background: var(--steel); }
+.sparkline-dot-wrap { align-items:center; justify-content:center; }
+.sparkline-dot { width:9px; height:9px; border-radius:50%; background: var(--steel); }
+.mini-stat-value { display:block; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:15px; }
+.mini-stat-label { display:block; font-size:9px; color:var(--text-dim); margin-top:2px; }
+
+.class-grid { display:flex; flex-direction:column; gap:8px; }
+.class-card { background: var(--bg-alt2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; text-align:left; color:var(--text); }
+.class-card.class-active { border-color: var(--ember); background: var(--ember-soft); }
+.class-name { font-weight:600; font-size:14px; }
+.class-desc { font-size:12px; color:var(--text-dim); margin-top:2px; }
+
+.program-list { display:flex; flex-direction:column; gap:8px; }
+.program-card {
+  background: var(--bg-alt2); border:1px solid var(--border); border-radius:12px; padding:12px 14px;
+  text-align:left; color:var(--text); width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px;
+}
+.program-card.program-active { border-color: var(--ember); background: var(--ember-soft); }
+.program-name { font-weight:600; font-size:14px; }
+.program-days-count { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); white-space:nowrap; }
+.program-card-row { display:flex; align-items:center; gap:6px; }
+.program-card-row .program-card { flex:1; }
+
+.program-active-card { border-color: rgba(255,90,31,0.3); }
+.program-hint-card { border-color: rgba(94,200,216,0.35); }
+.program-day-highlight { background: var(--bg-alt2); border:1px solid var(--border); border-radius:12px; padding:12px; margin:10px 0; }
+.program-day-index { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; }
+.program-day-label { font-family:'Oswald', sans-serif; font-weight:600; font-size:16px; margin:4px 0 8px; }
+.program-day-muscles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.program-exercise-list { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.program-exercise-tag {
+  font-size:12px; color:var(--text); background:var(--bg-alt2); border:1px solid var(--border);
+  border-radius:8px; padding:7px 10px;
+}
+.program-exercise-target { color:var(--ember); font-family:'JetBrains Mono', monospace; font-size:11px; }
+.session-card-target { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--ember); margin-top:2px; }
+.day-exercise-picker { margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); }
+.day-exercise-list { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+.day-exercise-row {
+  background:var(--bg-alt2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12px;
+}
+.day-exercise-row-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-weight:600; }
+.day-set-list { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+.day-set-row { display:flex; align-items:center; gap:6px; }
+.day-set-num { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); width:20px; flex-shrink:0; }
+.day-set-row input {
+  background: var(--bg-alt); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 8px; font-size:12px; width:70px;
+}
+.btn-add-set-mini {
+  background: transparent; border:1px dashed var(--border); color:var(--text-dim);
+  border-radius:6px; padding:6px 10px; font-size:11px; display:flex; align-items:center; gap:4px; width:100%; justify-content:center;
+}
+.day-exercise-search { margin-bottom:8px; }
+.day-exercise-options { max-height:180px; }
+.muscle-tag { font-family:'JetBrains Mono', monospace; font-size:10px; background: var(--bg-alt); border:1px solid var(--border); color:var(--steel); padding:3px 8px; border-radius:999px; }
+
+.program-builder input.picker-search { margin-bottom:10px; }
+.program-day-builder { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; background: var(--bg-alt); }
+.program-day-builder-error { border-color: var(--danger); }
+.program-day-builder-head { display:flex; gap:8px; margin-bottom:8px; }
+.program-day-builder-head input {
+  flex:1; background: var(--bg-alt2); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:8px 10px; font-size:13px;
+}
+.program-day-hint { margin:6px 0 0; font-size:11px; }
+.form-error {
+  color: var(--danger); background: rgba(229,72,77,0.12); border:1px solid rgba(229,72,77,0.4);
+  border-radius:8px; padding:9px 11px; font-size:12px; line-height:1.5; margin:4px 0 10px;
+}
+
+.achievement-list { display:flex; flex-direction:column; gap:10px; }
+.achievement-row { display:flex; align-items:flex-start; gap:10px; opacity:0.45; }
+.achievement-row.unlocked { opacity:1; }
+.ach-icon-locked { color: var(--text-dim); margin-top:2px; }
+.ach-icon-unlocked { color: var(--gold); margin-top:2px; }
+.achievement-name { font-size:13px; font-weight:600; }
+.achievement-desc { font-size:11px; color:var(--text-dim); }
+
+.bottom-nav {
+  position: sticky; bottom:0; left:0; right:0;
+  display:flex; background: linear-gradient(0deg, #14171C, #1A1D23);
+  border-top:1px solid var(--border);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:transparent; border:none; color: var(--text-dim); padding:6px 0; font-size:10px; }
+.nav-active { color: var(--ember); }
+
+.onboarding { padding:40px 20px; text-align:center; }
+.onboarding-title { font-family:'Oswald', sans-serif; font-weight:700; font-size:26px; letter-spacing:0.04em; color: var(--ember); margin-bottom:8px; }
+.onboarding-sub { color:var(--text-dim); font-size:14px; margin-bottom:24px; }
+.onboarding .class-grid { text-align:left; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(10,11,14,0.75); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+.modal-card { background: var(--bg-alt); border:1px solid var(--border); border-radius:16px; padding:24px; max-width:360px; width:100%; text-align:center; }
+.modal-title { font-family:'Oswald', sans-serif; font-size:18px; font-weight:600; margin-bottom:6px; text-transform:uppercase; }
+.modal-xp { font-family:'JetBrains Mono', monospace; font-size:28px; color:var(--ember); font-weight:700; margin-bottom:10px; }
+.modal-levelup { background: var(--ember-soft); color:var(--ember); border:1px solid var(--ember); border-radius:8px; padding:8px; font-size:13px; font-weight:700; margin-bottom:12px; letter-spacing:0.04em; }
+.modal-program-complete { background: rgba(94,200,216,0.15); color:var(--steel); border:1px solid var(--steel); line-height:1.5; }
+.modal-section { margin-bottom:12px; text-align:left; }
+.modal-section-title { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px; }
+.modal-row { font-size:13px; padding:4px 0; }
+
+@media (min-width: 500px) {
+  .app-shell { border-left:1px solid var(--border); border-right:1px solid var(--border); }
+}
+`;
+
+const rootEl = document.getElementById("root");
+createRoot(rootEl).render(<App />);
+</script>
+
+<script>
+  // On retire volontairement le service worker pour l'instant : il gardait en cache
+  // une ancienne version cassée de la page. On nettoie tout ce qui a pu être installé.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (reg) {
+        reg.unregister();
+      });
+    });
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function (keys) {
+      keys.forEach(function (key) {
+        caches.delete(key);
+      });
+    });
+  }
+</script>
+
+<script>
+/* ------------------------------------------------------------------------
+   CHARGEUR RESILIENT
+   ------------------------------------------------------------------------
+   Probleme corrige : les librairies etaient chargees depuis un CDN unique
+   (unpkg) via de simples balises script/src. Si ce CDN etait lent, filtre
+   ou indisponible, la page restait bloquee sur "Le chargement a echoue"
+   sans aucun diagnostic exploitable.
+
+   Ce chargeur :
+     1. essaie chaque librairie sur 3 CDN successifs (unpkg -> jsDelivr -> cdnjs) ;
+     2. impose un timeout de 20 s par tentative ;
+     3. verifie que la variable globale attendue existe REELLEMENT ;
+     4. compile ensuite le JSX explicitement (au lieu de dependre de
+        l'auto-transformation Babel au DOMContentLoaded, qui echouait
+        silencieusement si Babel arrivait trop tard) ;
+     5. affiche un message d'erreur precis et un bouton "Reessayer".
+   ---------------------------------------------------------------------- */
+(function () {
+  var LIBS = [
+    { global: "React", urls: [
+      "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+      "https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"
+    ] },
+    { global: "ReactDOM", urls: [
+      "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
+      "https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"
+    ] },
+    { global: "Babel", urls: [
+      "https://unpkg.com/@babel/standalone@7.26.4/babel.min.js",
+      "https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js",
+      "https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"
+    ] }
+  ];
+
+  var loadingEl = document.getElementById("boot-loading");
+  var errorEl = document.getElementById("boot-error");
+  var msgEl = document.getElementById("boot-error-msg");
+  var retryEl = document.getElementById("boot-retry");
+  var rootEl = document.getElementById("root");
+  var booted = false;
+
+  if (retryEl) {
+    retryEl.addEventListener("click", function () { window.location.reload(); });
+  }
+
+  function setStatus(txt) {
+    if (loadingEl) loadingEl.textContent = txt;
+  }
+
+  function fail(detail) {
+    if (booted) return;
+    if (loadingEl) loadingEl.style.display = "none";
+    if (rootEl) rootEl.style.display = "none";
+    if (errorEl) errorEl.style.display = "block";
+    if (msgEl && detail) {
+      msgEl.textContent = "Detail technique : " + detail;
+    }
+  }
+
+  // Ne masque l'application QUE si l'echec survient avant l'affichage.
+  window.addEventListener("error", function (e) {
+    fail(e && e.message ? e.message : "erreur inconnue");
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e && e.reason;
+    fail(r && r.message ? r.message : "promesse rejetee");
+  });
+
+  function loadScript(url) {
+    return new Promise(function (resolve, reject) {
+      var el = document.createElement("script");
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        if (el.parentNode) el.parentNode.removeChild(el);
+        reject(new Error("delai depasse : " + url));
+      }, 20000);
+      el.src = url;
+      el.async = false;
+      el.crossOrigin = "anonymous";
+      el.onload = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      el.onerror = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (el.parentNode) el.parentNode.removeChild(el);
+        reject(new Error("CDN injoignable : " + url));
+      };
+      document.head.appendChild(el);
+    });
+  }
+
+  function loadLib(lib) {
+    var i = 0;
+    var lastErr = null;
+    function attempt() {
+      if (window[lib.global]) return Promise.resolve();
+      if (i >= lib.urls.length) {
+        return Promise.reject(new Error(
+          lib.global + " n'a pu etre charge depuis aucun CDN" +
+          (lastErr ? " (" + lastErr.message + ")" : "")
+        ));
+      }
+      var url = lib.urls[i++];
+      return loadScript(url)
+        .then(function () {
+          if (!window[lib.global]) {
+            throw new Error(lib.global + " non defini apres " + url);
+          }
+        })
+        .catch(function (err) {
+          lastErr = err;
+          return attempt();
+        });
+    }
+    return attempt();
+  }
+
+  function boot() {
+    var chain = Promise.resolve();
+    LIBS.forEach(function (lib) {
+      chain = chain.then(function () {
+        setStatus("Chargement de " + lib.global + "\u2026");
+        return loadLib(lib);
+      });
+    });
+
+    chain
+      .then(function () {
+        setStatus("Preparation de l'application\u2026");
+        var srcEl = document.getElementById("app-source");
+        if (!srcEl) throw new Error("code source introuvable (#app-source)");
+
+        var compiled = window.Babel.transform(srcEl.textContent, {
+          // runtime "classic" = React.createElement, indispensable avec les
+          // builds UMD charges en global. Sans ce reglage explicite, un futur
+          // Babel 8 basculerait sur le runtime "automatic" (qui emet des
+          // import ...) et l'application ne demarrerait plus du tout.
+          presets: [["react", { runtime: "classic" }]],
+          filename: "app.jsx"
+        }).code;
+
+        var runner = document.createElement("script");
+        runner.textContent = compiled;
+        document.body.appendChild(runner);
+
+        // Verifie que React a bien rendu quelque chose. createRoot().render()
+        // etant asynchrone, on laisse un court delai avant de conclure.
+        setTimeout(function () {
+          if (rootEl && rootEl.querySelector(".app-shell")) {
+            booted = true;
+            if (loadingEl && loadingEl.parentNode) {
+              loadingEl.parentNode.removeChild(loadingEl);
+            }
+          } else {
+            fail("l'application ne s'est pas affichee (erreur de rendu)");
+          }
+        }, 1500);
+      })
+      .catch(function (err) {
+        fail(err && err.message ? err.message : String(err));
+      });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
